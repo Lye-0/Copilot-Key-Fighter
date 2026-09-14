@@ -1,0 +1,42 @@
+{
+  "auditedAt": "2026-09-14",
+  "source": "Existing personal ChatGPTLauncher source before distribution migration",
+  "files": [
+    {
+      "path": "ChatGpt.cs",
+      "sha256": "4AC39A75AD7B08C8B079593CF997D4902838B7071AB2D2F344223576978340E1"
+    },
+    {
+      "path": "ChatGPTLauncher.csproj",
+      "sha256": "2FD37B5B5BA9C29A85055022F666866F1A6C7F2E44F29456C8636001A1B863CE"
+    },
+    {
+      "path": "CopilotGesture.cs",
+      "sha256": "17B9738F2C89AD1F246D6FB2128CBE9C4847A5F82EC36DA87531DB62B602FB2A"
+    },
+    {
+      "path": "ForegroundHotkey.cs",
+      "sha256": "94CE75D791087B0D4EE064963E74070753D72FD70C57D33BFF50ECCFD553FA98"
+    },
+    {
+      "path": "KeyboardHook.cs",
+      "sha256": "C7A7278250AFD0718E102F6EC51F127F85C431989C6DF62C0ED54A08C7BFE334"
+    },
+    {
+      "path": "Native.cs",
+      "sha256": "B4C2317A4E66988A43F3CB31BECB14E85574B690D00F993078F540625AD0A655"
+    },
+    {
+      "path": "ProcessLifetime.cs",
+      "sha256": "95CC70B664642698D5B84C5EB4B9A22511E81056D0B6EEA96F7AF690CCF4524D"
+    },
+    {
+      "path": "Program.cs",
+      "sha256": "EED150A52936D1F7BAE8AB5543A595374CA057864528678AC156BB391734FB33"
+    },
+    {
+      "path": "Assets/App.ico",
+      "sha256": "1C3A7D3CD9C1A4D447588DB34501D7EA2FDDD47FCB1440C9300ADEB063ADD0D0"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <ApplicationIcon>../../assets/App.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.1.0</Version>
+    <Product>Copilot Key Fighter</Product>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../assets/App.ico" LogicalName="CopilotKeyFighter.App.ico" />
+    <InternalsVisibleTo Include="CopilotKeyFighter.Tests" />
+  </ItemGroup>
+</Project>
