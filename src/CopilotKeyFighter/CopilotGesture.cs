@@ -3,6 +3,7 @@ internal sealed class CopilotGesture
 {
     bool f23Down;
     bool captured;
+    internal bool IsCaptured => captured;
     internal (bool Suppress, bool Trigger) Process(uint key, bool down, bool leftWin, bool leftShift, bool otherModifier)
     {
         if (key != 0x86) return (false, false);

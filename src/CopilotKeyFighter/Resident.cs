@@ -139,7 +139,7 @@ internal sealed class Resident : ApplicationContext
         try
         {
             Directory.CreateDirectory(Program.StateDirectory);
-            File.WriteAllText(Path.Combine(Program.StateDirectory, "last-gesture.json"), System.Text.Json.JsonSerializer.Serialize(new { Time = DateTimeOffset.Now, Result = result, Enabled = keyboard.Enabled, Action = settings.Action.ToString(), Detail = detail }, SettingsStore.Options));
+            File.WriteAllText(Path.Combine(Program.StateDirectory, "last-gesture.json"), System.Text.Json.JsonSerializer.Serialize(new { Time = DateTimeOffset.Now, Result = result, Enabled = keyboard.Enabled, Action = settings.Action.ToString(), Detail = detail, Release = keyboard.ReleaseDiagnostic }, SettingsStore.Options));
         }
         catch { /* Diagnostics must never interrupt input processing. */ }
     }

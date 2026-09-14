@@ -3,6 +3,33 @@ using Xunit;
 public class SafetyTests
 {
     [Fact]
+    public void CopilotChordModifiersArrivingAfterF23DoNotCancelDelete()
+    {
+        var gesture = new CopilotGesture();
+        Assert.Equal((true,true), gesture.Process(0x86, true, true, true, false));
+        Assert.True(gesture.IsCaptured);
+        foreach (uint key in new uint[] {0x5B, 0xA0, 0x10})
+            Assert.False(KeyboardHook.CancelsPending(key, true, false, gesture.IsCaptured));
+        foreach (uint key in new uint[] {0x41, 0xA1, 0xA2, 0x5C})
+            Assert.True(KeyboardHook.CancelsPending(key, true, false, gesture.IsCaptured));
+        Assert.Equal((true,false), gesture.Process(0x86, false, false, false, false));
+        Assert.False(gesture.IsCaptured);
+        Assert.True(KeyboardHook.CancelsPending(0xA0, true, false, gesture.IsCaptured));
+        Assert.False(ReleaseGate.Blocked(_ => false, _ => false, 0x2E));
+        Assert.Equal(new[] {new KeyEvent(0x2E,false),new KeyEvent(0x2E,true)}, KeySequence.Create(new(0x2E)));
+    }
+    [Fact]
+    public void RepeatedHeldModifiersAreNotNewUserActions()
+    {
+        foreach(uint key in new uint[] {0x5B, 0xA0, 0x41})
+        {
+            Assert.False(KeyboardHook.CancelsPending(key, true, true));
+            Assert.True(KeyboardHook.CancelsPending(key, true, false));
+            Assert.False(KeyboardHook.CancelsPending(key, false, true));
+        }
+        Assert.False(KeyboardHook.CancelsPending(0x86, true, false));
+    }
+    [Fact]
     public void ReleaseGateUsesPairedPhysicalF23InsteadOfReservedAsyncStates()
     {
         Assert.False(ReleaseGate.Blocked(_ => false, k => k is 0x86 or 0xFC or 0xE5, 0x2E));
