@@ -57,3 +57,8 @@ The isolated native pipeline test reproduced the failure with no observed physic
 The gate now protects observed physical presses plus asynchronous modifier/mouse state, without blocking on the non-modifier target's asynchronous state alone. The internal mask pair is also emitted directly on capture, before UI scheduling, to avoid a late mask after physical Win release. The foreground-change cancellation remains enabled.
 
 DeletePipelineTests passed through the native hook, resident dispatch and SendInput and changed its owned TextBox from abc to bc three consecutive times. Modifier-release checks passed after each attempt. Production still ignores injected Copilot chords; tagged injection is enabled only on the isolated test instance. All 26 tests passed, and Debug built with zero warnings/errors. This materially strengthens the previous pure-state-machine checks; physical hardware confirmation is still separate.
+
+### User confirmation
+
+On 2026-09-15, the user confirmed that operation verification was complete after the native-input correction. This closes the reported physical Delete failure for the user's current setup; broader release gates remain separate.
+

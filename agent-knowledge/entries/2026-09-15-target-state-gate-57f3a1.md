@@ -41,3 +41,8 @@ Do not apply: 修飾キーの安全確認を削除する理由にはならない
 1. ReleaseGate が実入力と修飾キーの保護を維持し、非修飾 target の async 状態だけで待たないことを読む。
 2. 常駐を停止して DeletePipelineTests と SafetyTests を実行する。
 3. 実機の入力結果は独立して確認する。純粋な状態機械テストだけで実送信成功を主張しない。
+
+## Reuse Evidence
+
+2026-09-15: The user confirmed operation verification was complete after the corrected native-input build. This is evidence for the reported Delete scenario on that setup, not universal hardware compatibility.
+
