@@ -62,3 +62,8 @@ DeletePipelineTests passed through the native hook, resident dispatch and SendIn
 
 On 2026-09-15, the user confirmed that operation verification was complete after the native-input correction. This closes the reported physical Delete failure for the user's current setup; broader release gates remain separate.
 
+
+### 2026-09-15 settings UI review
+
+The UI was restructured around applied status, draft selection and explicit save feedback. UI assertions cover preserving Delete, unapplied draft state, reverting edits, applying settings, live pause status and Save visibility at 720 x 640 client size. Application/key/suppression pages and the searchable key picker were rendered for visual review. Windows file dialogs and scrollbars remain native intentionally. Additional DPI settings and screen-reader behavior remain manual checks.
+

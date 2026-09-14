@@ -1,172 +1,203 @@
 using System.Drawing;
 
-internal sealed class SettingsForm : Form
+internal sealed class SettingsForm:Form
 {
     readonly Action<Settings> save;
-    readonly CheckBox enabled = new() { Text = "Copilot キーの割り当てを有効にする", AutoSize = true };
-    readonly ModeSelector action = new();
-    readonly TextBox targetName = new() { ReadOnly = true, Dock = DockStyle.Fill };
-    readonly TextBox id = new() { Dock = DockStyle.Fill, ReadOnly = true };
-    readonly TextBox arguments = new() { Dock = DockStyle.Fill };
-    readonly TextBox directory = new() { Dock = DockStyle.Fill };
-    readonly CheckBox existing = new() { Text = "起動済みのウィンドウを優先する", AutoSize = true };
-    readonly CheckBox startup = new() { Text = "Windows へのログイン時に起動する", AutoSize = true };
-    readonly ComboBox key = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 190 };
-    readonly CheckBox ctrl = new() { Text = "Ctrl", AutoSize = true }, shift = new() { Text = "Shift", AutoSize = true }, alt = new() { Text = "Alt", AutoSize = true }, win = new() { Text = "Win", AutoSize = true };
-    readonly Label feedback = new() { AutoSize = true, MaximumSize = new(620, 0), ForeColor = Color.Firebrick };
-    readonly TableLayoutPanel appPanel = Grid(), keyPanel = Grid();
-    AppTarget? target;
-    bool dirty;
+    readonly UiCheck enabled=new(){Text="割り当てを有効にする",Dock=DockStyle.Fill};
+    readonly ModeSelector action=new();
+    readonly UiCheck existing=new(){Text="起動済みなら、そのウィンドウを表示",Dock=DockStyle.Fill};
+    readonly UiCheck startup=new(){Text="ログイン時に自動起動",Dock=DockStyle.Fill};
+    readonly UiCheck ctrl=Chip("Ctrl"),shift=Chip("Shift"),alt=Chip("Alt"),win=Chip("Win");
+    readonly TextBox id=new(){ReadOnly=true},arguments=new(),directory=new();
+    readonly Label appName=new(){AutoSize=true,Text="アプリを選択してください"};
+    readonly Label current=new(){AutoSize=true,Name="CurrentStatus"};
+    readonly Label modeHelp=new(){AutoSize=true};
+    readonly Label feedback=new(){AutoSize=false,Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,AutoEllipsis=true};
+    readonly Label combination=new(){AutoSize=true};
+    readonly UiButton chooseKey=new(){Width=250,Text="Delete  ▾",Name="KeyChoice"};
+    readonly UiButton chooseApp=new(){Text="アプリを選択",Width=160};
+    readonly UiButton tryApp=new(){Text="起動を試す",Width=130};
+    readonly UiButton apply=new(){Text="保存",Width=110,Primary=true,Name="SaveSettings"};
+    readonly TableLayoutPanel appPanel=Grid(),keyPanel=Grid(),details=Grid();
+    readonly PictureBox appIcon=new(){SizeMode=PictureBoxSizeMode.CenterImage,Width=44,Height=44};
     readonly Icon ownedIcon;
+    Settings baseline=null!;
+    Settings saved;
+    AppTarget? target;
+    int keyCode=0x2E;
+    bool initializing=true,paused;
+    bool Dirty=>!initializing&&Read()!=baseline;
 
-    internal SettingsForm(Settings settings, Action<Settings> save)
+    internal SettingsForm(Settings settings,Action<Settings> save,bool paused=false)
     {
-        this.save = save;
-        Text = "Copilot Key Fighter — 設定";
-        ownedIcon = Program.LoadIcon(); Icon = ownedIcon;
-        AutoScaleMode = AutoScaleMode.Dpi;
-        Font = new Font("Yu Gothic UI", 10);
-        ClientSize = new Size(1030, 760); MinimumSize = new Size(760, 620);
-        StartPosition = FormStartPosition.CenterScreen;
-        var brand = new BrandPanel();
-        var content = new Panel { Dock = DockStyle.Fill };
-        Controls.Add(content); Controls.Add(brand);
-        Resize += (_, _) => brand.Visible = ClientSize.Width >= 960 * DeviceDpi / 96;
-        var root = Grid(); root.Dock = DockStyle.Fill; root.AutoScroll = true; root.Padding = new Padding(30,24,30,16);
-        content.Controls.Add(root);
-        Add(root, new Label { Text = "ひと押しの先を、選ぶ。", Font = new Font(Font.FontFamily, 22, FontStyle.Bold), AutoSize = true });
-        Add(root, new Label { Text = "Copilot キーに、お好みの動作を割り当てます。", AutoSize = true, Margin = new Padding(0, 4, 0, 18) });
-        Add(root, enabled);
-        Add(root, Label("01   動作を選ぶ")); Add(root, action);
+        this.save=save;this.saved=settings;this.paused=paused;
+        Text="Copilot Key Fighter — 設定";ownedIcon=Program.LoadIcon();Icon=ownedIcon;
+        Font=new Font("Yu Gothic UI",10);BackColor=Visuals.Paper;ForeColor=Visuals.Ink;
+        AutoScaleMode=AutoScaleMode.Dpi;ClientSize=new Size(820,760);MinimumSize=new Size(720,640);StartPosition=FormStartPosition.CenterScreen;
+        var header=new Panel{Dock=DockStyle.Top,Height=86,Padding=new Padding(28,16,28,12),BackColor=Visuals.Surface};
+        var logo=new PictureBox{Image=ownedIcon.ToBitmap(),SizeMode=PictureBoxSizeMode.CenterImage,Dock=DockStyle.Left,Width=48};
+        var heading=new Label{Text="Copilot Key Fighter",Font=new Font(Font.FontFamily,16,FontStyle.Bold),AutoSize=true,Location=new Point(86,12)};
+        current.Location=new Point(88,48);header.Controls.AddRange([logo,heading,current]);
+        var content=Grid();content.Dock=DockStyle.Fill;content.AutoScroll=true;content.Padding=new Padding(28,20,28,12);
+        var footer=new TableLayoutPanel{Dock=DockStyle.Bottom,Height=76,ColumnCount=2,Padding=new Padding(28,14,28,14),BackColor=Visuals.Surface};
+        footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,244));
+        var buttons=Row();buttons.WrapContents=false;buttons.AutoSize=true;buttons.Controls.Add(Button("閉じる",(_,_)=>Close(),100));buttons.Controls.Add(apply);
+        footer.Controls.Add(feedback,0,0);footer.Controls.Add(buttons,1,0);
+        Controls.Add(content);Controls.Add(footer);Controls.Add(header);
+        Add(content,Title("Copilot キーの動作"));Add(content,enabled);Add(content,action);Add(content,modeHelp);
 
-        Add(appPanel, Label("02   起動するアプリ")); Add(appPanel, targetName);
-        var choose = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, WrapContents = true };
-        choose.Controls.Add(Button("アプリ一覧から選ぶ…", async (_, _) =>
-        {
-            using var picker = new AppPicker();
-            if (picker.ShowDialog(this) == DialogResult.OK) SetTarget(picker.Selected!);
-            await Task.CompletedTask;
-        }));
-        choose.Controls.Add(Button("実行ファイルを選ぶ…", (_, _) =>
-        {
-            using var dialog = new OpenFileDialog { Filter = "実行ファイル (*.exe)|*.exe", CheckFileExists = true };
-            if (dialog.ShowDialog(this) == DialogResult.OK) SetTarget(new(TargetKind.Executable, Path.GetFileNameWithoutExtension(dialog.FileName), dialog.FileName, dialog.FileName));
-        }));
-        choose.Controls.Add(Button("ID を直接指定…", (_, _) =>
-        {
-            using var dialog = new Form { Text = "パッケージアプリの AUMID", ClientSize = new Size(540, 155), StartPosition = FormStartPosition.CenterParent, MinimizeBox = false, MaximizeBox = false };
-            var field = new TextBox { Left = 16, Top = 45, Width = 500, Text = target?.Kind == TargetKind.Packaged ? target.Id : "" };
-            var ok = new Button { Text = "指定", Left = 420, Top = 95, DialogResult = DialogResult.OK };
-            dialog.Controls.AddRange([new Label { Text = "取得済みの AUMID を入力してください。", AutoSize = true, Left = 16, Top = 15 }, field, ok]); dialog.AcceptButton = ok;
-            if (dialog.ShowDialog(this) == DialogResult.OK && field.Text.Trim().Contains('!')) SetTarget(new(TargetKind.Packaged, field.Text.Trim(), field.Text.Trim()));
-        }));
-        Add(appPanel, choose);
-        Add(appPanel, Label("取得した ID / 実行ファイル")); Add(appPanel, id);
-        var details = Grid(); details.Visible = false;
-        var showDetails = new CheckBox { Text = "詳細設定（起動引数・作業フォルダー）", AutoSize = true };
-        showDetails.CheckedChanged += (_, _) => details.Visible = showDetails.Checked;
-        Add(appPanel, showDetails);
-        Add(details, Label("起動引数（省略可）")); Add(details, arguments);
-        Add(details, Label("作業フォルダー（実行ファイルのみ・省略可）")); Add(details, directory);
-        Add(appPanel, details);
-        Add(appPanel, existing);
-        Add(appPanel, Button("このアプリを開いて確認", async (sender, _) =>
-        {
-            var button = (Button)sender!; button.Enabled = false;
-            try { var value = Read(); value.Validate(); if (value.Target == null) throw new ArgumentException("アプリを選んでください。"); await AppLauncher.OpenAsync(value.Target, value.PreferExisting); feedback.Text = "起動処理を実行しました。ウィンドウをご確認ください。"; }
-            catch (Exception e) { feedback.Text = e.Message; }
-            finally { button.Enabled = true; }
-        }));
-        Add(root, appPanel);
+        var appCard=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=3,Padding=new Padding(14),BackColor=Visuals.Surface,Margin=new Padding(0,12,0,12)};
+        appCard.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,54));appCard.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));appCard.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        appName.Anchor=AnchorStyles.Left;appName.Font=new Font(Font,FontStyle.Bold);appName.MaximumSize=new Size(380,0);
+        appCard.Controls.Add(appIcon,0,0);appCard.Controls.Add(appName,1,0);appCard.Controls.Add(chooseApp,2,0);
+        Add(appPanel,appCard);
+        var appActions=Row();appActions.Controls.Add(Button("ファイルから選ぶ…",(_,_)=>BrowseExe(),180));appActions.Controls.Add(tryApp);Add(appPanel,appActions);
+        Add(appPanel,existing);
+        var expand=Button("詳細設定  ▸",(_,_)=>{},150);
+        expand.Click+=(_,_)=>{details.Visible=!details.Visible;expand.Text=details.Visible?"詳細設定  ▾":"詳細設定  ▸";};
+        Add(appPanel,expand);
+        Add(details,Caption("アプリID / 実行ファイル"));Add(details,Visuals.Field(id));
+        var advancedActions=Row();advancedActions.Controls.Add(Button("IDを指定…",(_,_)=>EnterId(),125));
+        advancedActions.Controls.Add(Button("コピー",(_,_)=>{if(id.Text.Length>0)Clipboard.SetText(id.Text);},100));Add(details,advancedActions);
+        Add(details,Caption("起動引数（任意）"));Add(details,Visuals.Field(arguments));
+        Add(details,Caption("作業フォルダー（任意）"));Add(details,Visuals.Field(directory));
+        Add(appPanel,details);details.Visible=false;
+        Add(content,appPanel);
 
-        Add(keyPanel, Label("02   送信するキー"));
-        var keys = Enum.GetValues<Keys>().Select(k => (int)k).Distinct().Where(k => k >= 8 && k <= 0xFE && !KeyBinding.IsModifier(k) && k is not (0x86 or 0xFC or 0xE7)).ToArray();
-        foreach (var code in keys) key.Items.Add(new KeyItem(code));
-        Add(keyPanel, key);
-        var mods = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill }; mods.Controls.AddRange([ctrl, shift, alt, win]); Add(keyPanel, mods);
-        Add(keyPanel, new Label { Text = "Copilot キーを離した後、1回送信します。\nCtrl + Alt + Delete、修飾キー単独、長押しの再現には対応していません。", AutoSize = true, MaximumSize = new Size(600, 0) });
-        Add(keyPanel, Label("入力の確認欄（保存後、この欄を選んで Copilot キーを押せます）"));
-        Add(keyPanel, new TextBox { Dock = DockStyle.Fill, AccessibleName = "キー入力の確認欄" });
-        Add(root, keyPanel);
-        Add(root, startup);
-        Add(root, feedback);
-        var footer = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Bottom, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(16, 8, 16, 12) };
-        var apply = Button("保存して適用", (_, _) =>
+        Add(keyPanel,Caption("送信するキー"));Add(keyPanel,chooseKey);
+        var modifiers=Row();modifiers.Controls.AddRange([ctrl,shift,alt,win]);Add(keyPanel,modifiers);
+        combination.Font=new Font("Segoe UI",15,FontStyle.Bold);combination.ForeColor=Visuals.Accent;Add(keyPanel,combination);
+        var testExpand=Button("入力欄で試す  ▸",(_,_)=>{},180);Add(keyPanel,testExpand);
+        var testPanel=Grid();testPanel.Visible=false;
+        Add(testPanel,Caption("保存後、この欄で動作を試せます。"));
+        var testInput=new TextBox{Text="abc",Multiline=true,AcceptsReturn=true,AccessibleName="キー入力の確認欄"};
+        Add(testPanel,Visuals.Field(testInput,70));
+        Add(testPanel,Button("リセット",(_,_)=>{testInput.Text="abc";testInput.Select(0,0);testInput.Focus();},110));
+        Add(keyPanel,testPanel);testExpand.Click+=(_,_)=>{testPanel.Visible=!testPanel.Visible;testExpand.Text=testPanel.Visible?"入力欄を閉じる  ▾":"入力欄で試す  ▸";};
+        Add(content,keyPanel);
+        Add(content,new Panel{Dock=DockStyle.Fill,Height=1,BackColor=Visuals.Border,Margin=new Padding(0,20,0,12)});
+        Add(content,startup);
+        content.RowCount++;content.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+
+        chooseApp.Click+=(_,_)=>{using var picker=new AppPicker();if(picker.ShowDialog(this)==DialogResult.OK)SetTarget(picker.Selected!);};
+        chooseKey.Click+=(_,_)=>{using var picker=new KeyPicker(keyCode);if(picker.ShowDialog(this)==DialogResult.OK){keyCode=picker.SelectedCode;RefreshDraft();}};
+        tryApp.Click+=async (_,_)=>
         {
-            try { save(Read()); dirty = false; feedback.ForeColor = Color.DarkGreen; feedback.Text = "保存しました。トレイに常駐します。この画面は閉じて構いません。"; }
-            catch (Exception e) { feedback.ForeColor = Color.Firebrick; feedback.Text = e.Message; }
-        });
-        footer.Controls.Add(apply); footer.Controls.Add(Button("閉じる", (_, _) => Close())); content.Controls.Add(footer);
-        AcceptButton = apply;
-        enabled.Checked = settings.Enabled; action.SelectedIndex = (int)settings.Action; existing.Checked = settings.PreferExisting; startup.Checked = settings.StartWithWindows;
-        var binding = settings.Binding ?? new();
-        key.SelectedItem = key.Items.Cast<KeyItem>().FirstOrDefault(k => k.Code == binding.Key);
-        ctrl.Checked = binding.Control; shift.Checked = binding.Shift; alt.Checked = binding.Alt; win.Checked = binding.Win;
-        if (settings.Target != null) SetTarget(settings.Target);
-        action.SelectedIndexChanged += (_, _) => { UpdatePanels(); dirty = true; };
-        foreach (var control in new Control[] { enabled, existing, startup, ctrl, shift, alt, win }) ((CheckBox)control).CheckedChanged += (_, _) => dirty = true;
-        foreach (var field in new[] { arguments, directory }) field.TextChanged += (_, _) => dirty = true;
-        key.SelectedIndexChanged += (_, _) => dirty = true;
-        UpdatePanels(); dirty = false;
-        Visuals.Apply(this); Visuals.Primary(apply); action.RefreshColors();
-        FormClosing += (_, e) => { if (dirty && MessageBox.Show(this, "保存していない変更を破棄して閉じますか？", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) e.Cancel = true; };
+            tryApp.Enabled=false;
+            try{var value=Read();value.Validate();if(value.Target==null)throw new ArgumentException("アプリを選択してください。");await AppLauncher.OpenAsync(value.Target,value.PreferExisting);ShowFeedback("起動しました。",false);}
+            catch(Exception e){ShowFeedback(e.Message,true);}
+            finally{tryApp.Enabled=target!=null;}
+        };
+        apply.Click+=(_,_)=>
+        {
+            try{var value=Read();save(value);saved=value;baseline=value;this.paused=false;RefreshDraft();RefreshCurrent();ShowFeedback("保存しました。",false);}
+            catch(Exception e){ShowFeedback(e.Message,true);}
+        };
+        enabled.Checked=settings.Enabled;action.SelectedIndex=(int)settings.Action;existing.Checked=settings.PreferExisting;startup.Checked=settings.StartWithWindows;
+        var binding=settings.Binding??new();keyCode=binding.Key;ctrl.Checked=binding.Control;shift.Checked=binding.Shift;alt.Checked=binding.Alt;win.Checked=binding.Win;
+        if(settings.Target!=null)SetTarget(settings.Target);
+        foreach(var c in new[]{enabled,existing,startup,ctrl,shift,alt,win})c.CheckedChanged+=(_,_)=>RefreshDraft();
+        arguments.TextChanged+=(_,_)=>RefreshDraft();directory.TextChanged+=(_,_)=>RefreshDraft();action.SelectedIndexChanged+=(_,_)=>RefreshDraft();
+        Visuals.Apply(this);baseline=Read();initializing=false;RefreshCurrent();RefreshDraft();
+        FormClosing+=(_,e)=>{if(Dirty&&!ConfirmDiscard())e.Cancel=true;};
+        FormClosed+=(_,_)=>logo.Image?.Dispose();
     }
-    Settings Read() => new(Enabled: enabled.Checked, Action: (ActionKind)action.SelectedIndex,
-        Target: target == null ? null : target with { Arguments = arguments.Text, WorkingDirectory = directory.Text.Trim() },
-        Binding: new((key.SelectedItem as KeyItem)?.Code ?? 0, ctrl.Checked, shift.Checked, alt.Checked, win.Checked), PreferExisting: existing.Checked, StartWithWindows: startup.Checked);
+    Settings Read()=>new(Enabled:enabled.Checked,Action:(ActionKind)action.SelectedIndex,Target:target==null?null:target with{Arguments=arguments.Text,WorkingDirectory=directory.Text.Trim()},Binding:new(keyCode,ctrl.Checked,shift.Checked,alt.Checked,win.Checked),PreferExisting:existing.Checked,StartWithWindows:startup.Checked);
+    void RefreshCurrent()
+    {
+        string state=!saved.Enabled?"停止中":paused?"一時停止中":"有効";
+        string assignment=saved.Action==ActionKind.Keyboard?KeyNames.Binding(saved.Binding??new()):saved.Action==ActionKind.Application?saved.Target?.Name??"未設定":"標準の起動を抑止";
+        current.Text=$"現在：{state}  ·  {assignment}";current.ForeColor=saved.Enabled&&!paused?Visuals.Accent:Visuals.Muted;
+    }
+    internal void UpdateRuntimeState(Settings value,bool isPaused){saved=value;paused=isPaused;RefreshCurrent();}
+    void RefreshDraft()
+    {
+        if(initializing)return;
+        appPanel.Visible=action.SelectedIndex==0;keyPanel.Visible=action.SelectedIndex==1;
+        modeHelp.Text=action.SelectedIndex switch{0=>"選んだアプリを開きます。",1=>"キーを離したときに、選んだ操作を1回送信します。",_=>"Copilot キーの標準の起動動作を止めます。"};
+        modeHelp.ForeColor=Visuals.Muted;
+        chooseKey.Text=KeyNames.Name(keyCode)+"  ▾";
+        chooseKey.AccessibleName="送信するキー："+KeyNames.Name(keyCode);
+        combination.Text="Copilot  →  "+KeyNames.Binding(Read().Binding!);combination.ForeColor=Visuals.Accent;
+        tryApp.Enabled=target!=null;chooseApp.Text=target==null?"アプリを選択":"変更…";
+        apply.Enabled=Dirty;
+        ShowFeedback(Dirty?"未保存の変更があります。保存すると適用されます。":"変更はありません。",false);
+    }
     void SetTarget(AppTarget value)
     {
-        target = value; targetName.Text = value.Name; id.Text = value.Id; arguments.Text = value.Arguments; directory.Text = value.WorkingDirectory;
-        arguments.Enabled = value.Kind != TargetKind.Shell; directory.Enabled = value.Kind == TargetKind.Executable; dirty = true;
+        target=value;appName.Text=value.Name;id.Text=value.Id;arguments.Text=value.Arguments;directory.Text=value.WorkingDirectory;
+        arguments.Enabled=value.Kind!=TargetKind.Shell;directory.Enabled=value.Kind==TargetKind.Executable;
+        appIcon.Image?.Dispose();using(var icon=TargetIcon.Load(value))appIcon.Image=icon.ToBitmap();RefreshDraft();
     }
-    void UpdatePanels() { appPanel.Visible = action.SelectedIndex == 0; keyPanel.Visible = action.SelectedIndex == 1; }
-    static Label Label(string text) => new() { Text = text, AutoSize = true, Margin = new Padding(0, 12, 0, 4) };
-    static TableLayoutPanel Grid() => new() { ColumnCount = 1, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top };
-    static void Add(TableLayoutPanel panel, Control control) { control.Margin = new Padding(0, 3, 0, 5); panel.Controls.Add(control, 0, panel.RowCount++); }
-    static Button Button(string text, EventHandler handler) { var button = new Button { Text = text, AutoSize = true, Padding = new Padding(8, 4, 8, 4) }; button.Click += handler; return button; }
-    protected override void Dispose(bool disposing) { base.Dispose(disposing); if (disposing) ownedIcon.Dispose(); }
-    sealed record KeyItem(int Code) { public override string ToString() => ((Keys)Code).ToString(); }
+    void BrowseExe()
+    {
+        using var dialog=new OpenFileDialog{Title="起動する実行ファイルを選択",Filter="実行ファイル (*.exe)|*.exe",CheckFileExists=true};
+        if(dialog.ShowDialog(this)==DialogResult.OK)SetTarget(new(TargetKind.Executable,Path.GetFileNameWithoutExtension(dialog.FileName),dialog.FileName,dialog.FileName));
+    }
+    void EnterId()
+    {
+        using var dialog=new Form{Text="アプリIDを指定",ClientSize=new Size(600,230),StartPosition=FormStartPosition.CenterParent,Font=Font,MinimizeBox=false,MaximizeBox=false,BackColor=Visuals.Paper};
+        dialog.ShowIcon=false;dialog.ShowInTaskbar=false;
+        var layout=Grid();layout.Dock=DockStyle.Fill;layout.Padding=new Padding(24);dialog.Controls.Add(layout);
+        Add(layout,Caption("パッケージアプリの AUMID"));
+        var field=new TextBox{Text=target?.Kind==TargetKind.Packaged?target.Id:""};Add(layout,Visuals.Field(field));
+        var error=new Label{AutoSize=true,ForeColor=Color.Firebrick};Add(layout,error);
+        var confirm=Button("指定する",(_,_)=>{if(!field.Text.Trim().Contains('!')){error.Text="「パッケージ名!アプリ名」の形式で入力してください。";return;}dialog.DialogResult=DialogResult.OK;dialog.Close();},130);
+        confirm.Primary=true;Add(layout,confirm);dialog.AcceptButton=confirm;
+        if(dialog.ShowDialog(this)==DialogResult.OK)SetTarget(new(TargetKind.Packaged,field.Text.Trim(),field.Text.Trim()));
+    }
+    bool ConfirmDiscard()
+    {
+        using var dialog=new Form{Text="未保存の変更",ClientSize=new Size(530,165),StartPosition=FormStartPosition.CenterParent,Font=Font,BackColor=Visuals.Paper,MinimizeBox=false,MaximizeBox=false};
+        dialog.ShowIcon=false;dialog.ShowInTaskbar=false;
+        var root=Grid();root.Dock=DockStyle.Fill;root.Padding=new Padding(22);dialog.Controls.Add(root);
+        Add(root,Caption("変更を保存せずに閉じますか？"));
+        var row=Row();var back=Button("編集に戻る",(_,_)=>{dialog.DialogResult=DialogResult.Cancel;dialog.Close();},150);back.Primary=true;
+        row.Controls.Add(back);row.Controls.Add(Button("保存せず閉じる",(_,_)=>{dialog.DialogResult=DialogResult.OK;dialog.Close();},170));Add(root,row);dialog.CancelButton=back;
+        return dialog.ShowDialog(this)==DialogResult.OK;
+    }
+    void ShowFeedback(string text,bool error)
+    {
+        feedback.Text=text;feedback.ForeColor=error?Color.Firebrick:Visuals.Muted;
+        if(feedback.Parent is TableLayoutPanel footer)
+        {
+            int width=Math.Max(180,footer.ClientSize.Width-footer.Padding.Horizontal-244);
+            int height=TextRenderer.MeasureText(text,feedback.Font,new Size(width,int.MaxValue),TextFormatFlags.WordBreak).Height;
+            footer.Height=Math.Clamp(height+28,76,140);
+        }
+    }
+    internal static UiButton Button(string text,EventHandler handler,int width=140){var b=new UiButton{Text=text,Width=width};b.Click+=handler;return b;}
+    static UiCheck Chip(string text)=>new(){Text=text,Chip=true,Width=90,Height=38,Margin=new Padding(0,6,8,8)};
+    internal static TableLayoutPanel Grid()=>new(){ColumnCount=1,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Dock=DockStyle.Top};
+    internal static FlowLayoutPanel Row()=>new(){AutoSize=true,Dock=DockStyle.Fill,WrapContents=true,Margin=new Padding(0,4,0,8)};
+    internal static void Add(TableLayoutPanel p,Control c){p.RowStyles.Add(new RowStyle(SizeType.AutoSize));p.Controls.Add(c,0,p.RowCount++);}
+    internal static Label Caption(string text)=>new(){Text=text,AutoSize=true,Margin=new Padding(0,10,0,8)};
+    Label Title(string text)=>new(){Text=text,AutoSize=true,Font=new Font(Font.FontFamily,16,FontStyle.Bold),Margin=new Padding(0,0,0,10)};
+    protected override void Dispose(bool disposing){if(disposing){appIcon.Image?.Dispose();ownedIcon.Dispose();}base.Dispose(disposing);}
 }
 
-internal sealed class AppPicker : Form
+internal static class KeyNames
 {
-    readonly TextBox search = new() { Dock = DockStyle.Top, PlaceholderText = "アプリ名で検索" };
-    readonly ListBox list = new() { Dock = DockStyle.Fill, DisplayMember = "Name", IntegralHeight = false };
-    readonly Label state = new() { Dock = DockStyle.Bottom, Height = 42, Text = "アプリ一覧を読み込んでいます…" };
-    readonly Button select = new() { Text = "このアプリを選ぶ", Dock = DockStyle.Bottom, Height = 40, Enabled = false };
-    List<AppTarget> apps = [];
-    readonly Dictionary<string, Icon> icons = new();
-    internal AppTarget? Selected => list.SelectedItem as AppTarget;
-    internal AppPicker()
+    internal static string Name(int code)=>code switch
     {
-        Text = "起動するアプリを選ぶ"; ClientSize = new Size(570, 520); Padding = new Padding(16);
-        Font = new System.Drawing.Font("Yu Gothic UI", 10); StartPosition = FormStartPosition.CenterParent;
-        Controls.AddRange([list, state, select, search]);
-        Visuals.Apply(this); Visuals.Primary(select);
-        list.DrawMode = DrawMode.OwnerDrawFixed; list.ItemHeight = 36;
-        list.DrawItem += (_, e) =>
-        {
-            if (e.Index < 0 || list.Items[e.Index] is not AppTarget app) return;
-            e.DrawBackground();
-            if (!icons.TryGetValue(app.Id, out var icon)) icons[app.Id] = icon = TargetIcon.Load(app);
-            e.Graphics.DrawIcon(icon, new Rectangle(e.Bounds.Left + 6, e.Bounds.Top + 6, 24, 24));
-            TextRenderer.DrawText(e.Graphics, app.Name, e.Font, new Rectangle(e.Bounds.Left + 40, e.Bounds.Top, e.Bounds.Width - 44, e.Bounds.Height), e.ForeColor, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
-            e.DrawFocusRectangle();
-        };
-        search.TextChanged += (_, _) => Filter();
-        list.SelectedIndexChanged += (_, _) => { select.Enabled = Selected != null; state.Text = Selected == null ? "アプリを選択してください。" : Selected.Kind == TargetKind.Executable ? "実行ファイルから起動します。" : "選択するとアプリの ID を自動で設定します。"; };
-        select.Click += (_, _) => { if (Selected != null) { DialogResult = DialogResult.OK; Close(); } };
-        list.DoubleClick += (_, _) => select.PerformClick();
-        Shown += async (_, _) =>
-        {
-            try { apps = await AppCatalog.LoadAsync(); if (!IsDisposed) { Filter(); state.Text = $"{apps.Count} 件のアプリ。見つからない場合は実行ファイルを指定できます。"; } }
-            catch (Exception e) { if (!IsDisposed) state.Text = "取得できませんでした: " + e.Message; }
-        };
-    }
-    void Filter() { list.DataSource = apps.Where(x => x.Name.Contains(search.Text, StringComparison.CurrentCultureIgnoreCase)).ToList(); }
-    protected override void Dispose(bool disposing)
+        8=>"Backspace",9=>"Tab",13=>"Enter",19=>"Pause",20=>"Caps Lock",27=>"Esc",32=>"Space",33=>"Page Up",34=>"Page Down",35=>"End",36=>"Home",
+        37=>"← 左",38=>"↑ 上",39=>"→ 右",40=>"↓ 下",44=>"Print Screen",45=>"Insert",46=>"Delete",
+        >=48 and <=57=>((char)code).ToString(),>=65 and <=90=>((char)code).ToString(),>=96 and <=105=>"テンキー "+(code-96),
+        106=>"テンキー ×",107=>"テンキー ＋",109=>"テンキー −",110=>"テンキー .",111=>"テンキー ÷",
+        >=112 and <=135=>"F"+(code-111),144=>"Num Lock",145=>"Scroll Lock",173=>"ミュート",174=>"音量を下げる",175=>"音量を上げる",176=>"次の曲",177=>"前の曲",178=>"停止",179=>"再生 / 一時停止",
+        21=>"かな",22=>"IME オン",26=>"IME オフ",28=>"変換",29=>"無変換",
+        166=>"ブラウザー：戻る",167=>"ブラウザー：進む",168=>"ブラウザー：更新",169=>"ブラウザー：停止",170=>"ブラウザー：検索",171=>"ブラウザー：お気に入り",172=>"ブラウザー：ホーム",
+        186 or 187 or 188 or 189 or 190 or 191 or 192 or 219 or 220 or 221 or 222 or 226=>LayoutName(code),
+        _=>((Keys)code).ToString()
+    };
+    internal static string Binding(KeyBinding b)=>string.Join(" + ",new[]{b.Control?"Ctrl":null,b.Shift?"Shift":null,b.Alt?"Alt":null,b.Win?"Win":null,Name(b.Key)}.Where(x=>x!=null));
+    internal static IEnumerable<int> Codes=>new[]{46,8,13,27,9,32,45,36,35,33,34,37,38,39,40,44,19,20,144,145}.Concat(Enumerable.Range(112,24).Where(k=>k!=134)).Concat(Enumerable.Range(65,26)).Concat(Enumerable.Range(48,10)).Concat(Enumerable.Range(96,16).Where(k=>k!=108)).Concat(Enumerable.Range(166,14)).Concat(new[]{21,22,26,28,29,186,187,188,189,190,191,192,219,220,221,222,226});
+    static string LayoutName(int code)
     {
-        base.Dispose(disposing);
-        if (disposing) { foreach (var icon in icons.Values) icon.Dispose(); icons.Clear(); }
+        uint scan=MapVirtualKey((uint)code,4);var name=new System.Text.StringBuilder(80);
+        int parameter=(int)((scan&255)<<16);if((scan&0xFF00)!=0)parameter|=1<<24;
+        return GetKeyNameText(parameter,name,name.Capacity)>0?name.ToString():$"記号キー {code:X2}";
     }
+    [System.Runtime.InteropServices.DllImport("user32.dll",EntryPoint="MapVirtualKeyW")] static extern uint MapVirtualKey(uint key,uint mapType);
+    [System.Runtime.InteropServices.DllImport("user32.dll",CharSet=System.Runtime.InteropServices.CharSet.Unicode)] static extern int GetKeyNameText(int parameter,System.Text.StringBuilder name,int size);
 }

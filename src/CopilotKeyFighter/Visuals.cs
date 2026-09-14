@@ -1,119 +1,149 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.ComponentModel;
 
 internal static class Visuals
 {
-    internal static readonly Color Navy = Color.FromArgb(9, 28, 52), Cyan = Color.FromArgb(0, 221, 230), Ink = Color.FromArgb(21, 42, 63), Muted = Color.FromArgb(84, 103, 120), Paper = Color.FromArgb(244, 247, 250), Border = Color.FromArgb(205, 216, 225);
-    internal static void Apply(Control parent)
+    internal static ToolStripRenderer MenuRenderer()=>new MenuTheme();
+    sealed class MenuColors:ProfessionalColorTable
     {
-        if (SystemInformation.HighContrast) return;
-        parent.ForeColor = Ink;
-        if (parent is Form) parent.BackColor = Paper;
-        foreach (Control child in parent.Controls)
+        public override Color ToolStripDropDownBackground=>Surface;
+        public override Color ImageMarginGradientBegin=>Surface;
+        public override Color ImageMarginGradientMiddle=>Surface;
+        public override Color ImageMarginGradientEnd=>Surface;
+        public override Color MenuBorder=>Border;
+        public override Color MenuItemBorder=>Accent;
+        public override Color MenuItemSelected=>SystemInformation.HighContrast?SystemColors.Highlight:Color.FromArgb(229,242,245);
+        public override Color SeparatorDark=>Border;
+        public override Color SeparatorLight=>Surface;
+    }
+    sealed class MenuTheme:ToolStripProfessionalRenderer
+    {
+        internal MenuTheme():base(new MenuColors()){RoundedEdges=false;}
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
-            if (child is BrandPanel) continue;
-            Apply(child);
-            if (child is Button b)
-            {
-                b.FlatStyle = FlatStyle.Flat; b.FlatAppearance.BorderColor = Border; b.FlatAppearance.MouseOverBackColor = Color.FromArgb(225, 242, 245);
-                b.BackColor = Color.White; b.ForeColor = Ink; b.Cursor = Cursors.Hand;
-            }
-            if (child is TextBox text) { text.BackColor = text.ReadOnly ? Color.FromArgb(232, 238, 243) : Color.White; text.BorderStyle = BorderStyle.FixedSingle; }
-            if (child is ComboBox combo)
-            {
-                combo.FlatStyle = FlatStyle.Flat; combo.BackColor = Color.White; combo.DrawMode = DrawMode.OwnerDrawFixed;
-                combo.DrawItem += (_, e) =>
-                {
-                    if (e.Index < 0) return;
-                    bool selected = (e.State & DrawItemState.Selected) != 0;
-                    using var fill = new SolidBrush(selected ? Navy : Color.White); e.Graphics.FillRectangle(fill, e.Bounds);
-                    TextRenderer.DrawText(e.Graphics, combo.Items[e.Index]?.ToString() ?? "", e.Font, e.Bounds, selected ? Color.White : Ink, TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
-                    e.DrawFocusRectangle();
-                };
-            }
+            e.TextColor=!e.Item.Enabled?SystemColors.GrayText:SystemInformation.HighContrast&&e.Item.Selected?SystemColors.HighlightText:Ink;base.OnRenderItemText(e);
         }
     }
-    internal static void Primary(Button button)
+    internal static Color Navy => SystemInformation.HighContrast ? SystemColors.Highlight : Color.FromArgb(18,42,61);
+    internal static Color Ink => SystemInformation.HighContrast ? SystemColors.ControlText : Color.FromArgb(26,43,58);
+    internal static Color Muted => SystemInformation.HighContrast ? SystemColors.ControlText : Color.FromArgb(92,109,123);
+    internal static Color Paper => SystemInformation.HighContrast ? SystemColors.Control : Color.FromArgb(245,248,250);
+    internal static Color Border => SystemInformation.HighContrast ? SystemColors.ControlText : Color.FromArgb(202,214,223);
+    internal static Color Accent => SystemInformation.HighContrast ? SystemColors.Highlight : Color.FromArgb(0,115,128);
+    internal static Color Surface => SystemColors.Window;
+    internal static void Apply(Control parent)
     {
-        if (SystemInformation.HighContrast) return;
-        button.BackColor = Navy; button.ForeColor = Color.White;
-        button.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 61, 87);
-        button.FlatAppearance.MouseDownBackColor = Color.FromArgb(0, 85, 104);
-        button.FlatAppearance.BorderColor = Navy;
+        parent.ForeColor = Ink;
+        if(parent is Form) parent.BackColor = Paper;
+        foreach(Control child in parent.Controls) Apply(child);
+    }
+    internal static void Primary(Button button) { if(button is UiButton b) b.Primary = true; }
+    internal static GraphicsPath Round(Rectangle rect, int radius)
+    {
+        var p=new GraphicsPath(); int d=Math.Min(radius*2,Math.Min(rect.Width,rect.Height));
+        if(d<2){p.AddRectangle(rect);return p;}
+        p.AddArc(rect.Left,rect.Top,d,d,180,90);p.AddArc(rect.Right-d,rect.Top,d,d,270,90);
+        p.AddArc(rect.Right-d,rect.Bottom-d,d,d,0,90);p.AddArc(rect.Left,rect.Bottom-d,d,d,90,90);p.CloseFigure();return p;
+    }
+    internal static void Box(Graphics g,Rectangle bounds,Color fill,Color edge,int radius=7)
+    {
+        g.SmoothingMode=SmoothingMode.AntiAlias;
+        using var path=Round(bounds,radius);using var brush=new SolidBrush(fill);using var pen=new Pen(edge);
+        g.FillPath(brush,path);g.DrawPath(pen,path);
+    }
+    internal static Control Field(TextBox text, int height=42)
+    {
+        text.BorderStyle=BorderStyle.None;text.BackColor=Surface;text.ForeColor=Ink;text.Dock=DockStyle.Fill;
+        var host=new FieldPanel { Dock=DockStyle.Fill,Height=height,Padding=new Padding(12,10,12,8),Margin=new Padding(0,0,0,8) };
+        host.Controls.Add(text);text.GotFocus+=(_,_)=>host.Invalidate();text.LostFocus+=(_,_)=>host.Invalidate();return host;
+    }
+    sealed class FieldPanel:Panel
+    {
+        internal FieldPanel(){DoubleBuffered=true;BackColor=Surface;}
+        protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);using var pen=new Pen(ContainsFocus?Accent:Border,ContainsFocus?2:1);e.Graphics.DrawRectangle(pen,1,1,Width-3,Height-3);}
     }
 }
 
-internal sealed class ModeSelector : FlowLayoutPanel
+internal class UiButton:Button
+{
+    bool hover,pressed,primary;
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    internal bool Primary {get=>primary;set{primary=value;Invalidate();}}
+    internal UiButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);Height=42;Width=130;Cursor=Cursors.Hand;Margin=new Padding(0,0,8,0);}
+    protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
+    protected override void OnMouseLeave(EventArgs e){hover=pressed=false;Invalidate();base.OnMouseLeave(e);}
+    protected override void OnMouseDown(MouseEventArgs e){pressed=true;Invalidate();base.OnMouseDown(e);}
+    protected override void OnMouseUp(MouseEventArgs e){pressed=false;Invalidate();base.OnMouseUp(e);}
+    protected override void OnGotFocus(EventArgs e){Invalidate();base.OnGotFocus(e);}
+    protected override void OnLostFocus(EventArgs e){Invalidate();base.OnLostFocus(e);}
+    protected override void OnEnabledChanged(EventArgs e){Invalidate();base.OnEnabledChanged(e);}
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        Color fill=!Enabled?Visuals.Paper:primary?Visuals.Navy:(hover||pressed)?SystemInformation.HighContrast?SystemColors.Highlight:Color.FromArgb(229,242,245):Visuals.Surface;
+        Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),fill,Focused?Visuals.Accent:primary&&Enabled?Visuals.Navy:Visuals.Border);
+        TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(10,0,Width-20,Height),!Enabled?Visuals.Muted:primary||(SystemInformation.HighContrast&&(hover||pressed))?SystemColors.HighlightText:Visuals.Ink,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
+        if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(5,5,Width-11,Height-11));
+    }
+}
+
+internal sealed class UiCheck:CheckBox
+{
+    bool hover;
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    internal bool Chip {get;set;}
+    internal UiCheck(){AutoSize=false;Height=34;Width=600;Cursor=Cursors.Hand;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);}
+    protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
+    protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
+    protected override void OnCheckedChanged(EventArgs e){Invalidate();base.OnCheckedChanged(e);}
+    protected override void OnGotFocus(EventArgs e){Invalidate();base.OnGotFocus(e);}
+    protected override void OnLostFocus(EventArgs e){Invalidate();base.OnLostFocus(e);}
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        if(Chip)
+        {
+            Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Checked?Visuals.Navy:Visuals.Surface,Focused?Visuals.Accent:Visuals.Border);
+            TextRenderer.DrawText(e.Graphics,Text,Font,ClientRectangle,Checked?SystemColors.HighlightText:Visuals.Ink,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);
+        }
+        else
+        {
+            int top=(Height-20)/2;
+            Visuals.Box(e.Graphics,new Rectangle(1,top,20,20),Checked?Visuals.Accent:Visuals.Surface,hover||Focused?Visuals.Accent:Visuals.Border,4);
+            if(Checked){using var pen=new Pen(SystemColors.HighlightText,2);e.Graphics.DrawLines(pen,[new Point(5,top+10),new Point(9,top+14),new Point(17,top+6)]);}
+            TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(32,0,Width-34,Height),Enabled?Visuals.Ink:Visuals.Muted,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
+        }
+        if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(3,3,Width-7,Height-7));
+    }
+}
+
+internal sealed class ModeSelector:FlowLayoutPanel
 {
     readonly RadioButton[] choices;
     internal event EventHandler? SelectedIndexChanged;
-    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-    internal int SelectedIndex
-    {
-        get => Array.FindIndex(choices, c => c.Checked);
-        set { if (value >= 0 && value < choices.Length) choices[value].Checked = true; }
-    }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    internal int SelectedIndex {get=>Array.FindIndex(choices,c=>c.Checked);set{if(value>=0&&value<choices.Length)choices[value].Checked=true;}}
     internal ModeSelector()
     {
-        AutoSize = true; Dock = DockStyle.Fill; WrapContents = true;
-        choices = new[] { "アプリを開く", "キーを送る", "何もしない" }.Select(text => new RadioButton
-        {
-            Text = text, Appearance = Appearance.Button, AutoSize = true, Padding = new Padding(13, 9, 13, 9), FlatStyle = FlatStyle.Flat,
-            TextAlign = ContentAlignment.MiddleCenter, Margin = new Padding(0, 0, 7, 4), Cursor = Cursors.Hand,
-            AccessibleDescription = "Copilot キーの割り当て方式"
-        }).ToArray();
-        foreach (var choice in choices)
-        {
-            choice.CheckedChanged += (_, _) => { RefreshColors(); if (choice.Checked) SelectedIndexChanged?.Invoke(this, EventArgs.Empty); };
-            Controls.Add(choice);
-        }
-        SelectedIndex = 0;
+        AutoSize=true;Dock=DockStyle.Fill;WrapContents=false;Margin=new Padding(0,0,0,4);
+        choices=new[]{"アプリを開く","キーを送る","起動を抑止"}.Select(t=>(RadioButton)new Choice {Text=t,Height=54,Width=220,Margin=new Padding(0,0,8,0)}).ToArray();
+        foreach(var c in choices){Controls.Add(c);c.CheckedChanged+=(_,_)=>{c.Invalidate();if(c.Checked)SelectedIndexChanged?.Invoke(this,EventArgs.Empty);};}
+        SizeChanged+=(_,_)=>{foreach(var c in choices)c.Width=Math.Max(130,(ClientSize.Width-24)/3);};SelectedIndex=0;
     }
-    internal void RefreshColors()
+    internal void RefreshColors(){foreach(var c in choices)c.Invalidate();}
+    sealed class Choice:RadioButton
     {
-        if (SystemInformation.HighContrast) return;
-        foreach (var choice in choices)
+        bool hover;
+        internal Choice(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);Cursor=Cursors.Hand;}
+        protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
+        protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
+        protected override void OnGotFocus(EventArgs e){Invalidate();base.OnGotFocus(e);}
+        protected override void OnLostFocus(EventArgs e){Invalidate();base.OnLostFocus(e);}
+        protected override void OnPaint(PaintEventArgs e)
         {
-            choice.BackColor = choice.Checked ? Visuals.Navy : Color.White;
-            choice.ForeColor = choice.Checked ? Color.White : Visuals.Ink;
-            choice.FlatAppearance.BorderColor = choice.Checked ? Visuals.Navy : Visuals.Border;
-            choice.FlatAppearance.CheckedBackColor = Visuals.Navy;
-            choice.FlatAppearance.MouseOverBackColor = choice.Checked ? Color.FromArgb(18,61,87) : Color.FromArgb(225,242,245);
+            Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Checked?Visuals.Navy:Visuals.Surface,Focused||hover?Visuals.Accent:Visuals.Border);
+            TextRenderer.DrawText(e.Graphics,Text,Font,ClientRectangle,Checked?SystemColors.HighlightText:Visuals.Ink,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);
+            if(Checked){using var b=new SolidBrush(SystemInformation.HighContrast?SystemColors.HighlightText:Color.FromArgb(0,211,220));e.Graphics.FillRectangle(b,14,Height-6,Width-28,3);}
+            if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(5,5,Width-11,Height-11));
         }
     }
-}
-
-internal sealed class BrandPanel : Panel
-{
-    readonly Image key;
-    internal BrandPanel()
-    {
-        DoubleBuffered = true; Width = 260; Dock = DockStyle.Left; BackColor = Visuals.Navy;
-        using var stream = typeof(Program).Assembly.GetManifestResourceStream("CopilotKeyFighter.Key.png")!;
-        using var source = Image.FromStream(stream); key = new Bitmap(source);
-        AccessibleName = "Copilot Key Fighter";
-    }
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        base.OnPaint(e);
-        var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-        // Scale to the actual panel width; DPI may already have scaled the control.
-        float scale = Width / 260f;
-        using var title = new Font("Segoe UI", 28*scale, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var small = new Font("Segoe UI", 10*scale, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var japanese = new Font("Yu Gothic UI", 22*scale, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var text = new Font("Yu Gothic UI", 15*scale, FontStyle.Regular, GraphicsUnit.Pixel);
-        using var white = new SolidBrush(Color.White);
-        using var cyan = new SolidBrush(Visuals.Cyan);
-        using var muted = new SolidBrush(Color.FromArgb(171,193,213));
-        float x=26*scale, w=Width-52*scale;
-        g.DrawString("COPILOT\nKEY FIGHTER", title, white, new RectangleF(x,34*scale,w,100*scale));
-        g.FillRectangle(cyan,x,149*scale,34*scale,3*scale);
-        var imageWidth = Math.Min(w,210*scale);
-        g.DrawImage(key, new RectangleF((Width-imageWidth)/2,192*scale,imageWidth,imageWidth*key.Height/key.Width));
-        g.DrawString("そのキーを、\n自分のために。", japanese, white, new RectangleF(x,400*scale,w,85*scale));
-        g.DrawString("いつもの操作へ、\nひと押しで。", text, muted, new RectangleF(x,502*scale,w,65*scale));
-        if (Height>640*scale) g.DrawString("YOUR KEY. YOUR CHOICE.",small,cyan,new PointF(x,Height-45*scale));
-    }
-    protected override void Dispose(bool disposing) { if(disposing) key.Dispose(); base.Dispose(disposing); }
 }

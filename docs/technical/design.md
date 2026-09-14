@@ -26,10 +26,13 @@ Existing windows are matched by exact process AUMID or executable path, not titl
 
 ## Visual direction
 
-The adopted cyan key is the principal brand asset. A navy identity panel carries the expressive copy, while the light task area contains native controls. The three action choices use an accessible radio group; selecting, keyboard navigation, focus and checked state remain native semantics. Save remains in a fixed footer. Advanced arguments and working directory are disclosed on demand. At smaller widths the identity panel yields space to the task.
+Settings are organized in a single task-focused column: current applied status in the header, draft action and target in the body, and feedback/save controls in the bottom footer. The decorative sidebar is removed. Selected applications are displayed by name and icon; IDs, arguments and working directory are disclosed under advanced settings. Key selection uses a searchable dialog with readable labels instead of a raw Keys enumeration. Symbol-key labels use the current Windows keyboard layout.
 
-Color, button, selection and dropdown styling share Visuals tokens. The picker uses the actual installed-app icons. Native scrollbars and file dialogs deliberately follow Windows settings; high-contrast mode bypasses custom control colors. No continuous animation or rendering loop runs in the tray resident. Popup interaction, high-contrast changes at runtime and additional DPI settings require manual verification beyond rendered previews.
+SettingsForm keeps the applied status separate from its normalized draft baseline. Editing does not update the active-status label. Saving updates the baseline; reverting edits disables Save again. Resident forwards actual pause/configuration changes to the open form. A retained multiline test field allows testing the saved key action. Validation errors remain visible near Save; the footer can grow for wrapped feedback and remains anchored at small window sizes.
 
+UiButton, UiCheck and ModeSelector provide consistent drawn selection, hover, disabled and focus states while retaining the native Button/CheckBox/RadioButton interaction and accessibility semantics. Search results, dialogs and the tray menu share the same palette. Windows text-editing internals, window chrome, scrollbars and file picking remain native intentionally for IME, accessibility and platform behavior. High-contrast colors are consulted during rendering. Actual screen-reader behavior and additional DPI configurations still need manual review.
+
+Rendered application, keyboard and suppression pages and the key picker were reviewed. UI tests cover selected Delete preservation, draft/applied-state separation, revert/save behavior, pause status and Save visibility at a smaller size. The keyboard capture/sending pipeline is unchanged by this UI revision.
 ## Distribution
 
 scripts/package.ps1 builds the Windows x64 self-contained single-file executable, includes GPL-3.0, notices, runtime licenses, and creates a ZIP plus SHA256. GitHub Actions tests/packages on branch/PR and creates a draft prerelease on a version tag. The same commit's source archive is attached. Publishing a draft is a separate release operation. No updater, service, signing, or installer is implemented.
@@ -39,4 +42,5 @@ The historical migration plan remains under docs/plans; this document describes 
 
 
 The native DeletePipelineTests instantiate an isolated settings store and opt in to a tagged synthetic Copilot chord for that test hook only. Production leaves the tag at zero and rejects injected Copilot chords. The test focuses its own TextBox, verifies foreground ownership before injection, checks abc becomes bc three times, and checks modifier release. This test must run with the normal resident stopped because it exercises the actual global hook and internal hotkey registrations.
+
 

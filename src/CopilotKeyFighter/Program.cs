@@ -15,11 +15,17 @@ internal static class Program
             }
             if (args.Length >= 2 && args[0] == "--render-settings")
             {
-                using var form = new SettingsForm(args.Contains("keyboard") ? new(Action: ActionKind.Keyboard, Binding: new()) : new(), _ => { });
+                Settings sample = args.Contains("keyboard") ? new(Enabled:args.Contains("enabled"), Action:ActionKind.Keyboard, Binding:new()) : args.Contains("selected") ? new(Enabled:true, Target:new(TargetKind.Executable,"メモ帳",Path.Combine(Environment.SystemDirectory,"notepad.exe"))) : args.Contains("blocked") ? new(Enabled:true,Action:ActionKind.Disabled) : new();
+                using var form = new SettingsForm(sample, _ => { });
                 form.Show(); Application.DoEvents();
                 using var bitmap = new System.Drawing.Bitmap(form.Width, form.Height);
                 form.DrawToBitmap(bitmap, form.ClientRectangle with { Width = form.Width, Height = form.Height });
                 bitmap.Save(args[1]); form.Close(); return 0;
+            }
+            if(args.Length==2 && args[0]=="--render-key-picker")
+            {
+                using var form=new KeyPicker(0x2E);form.Show();Application.DoEvents();
+                using var bitmap=new System.Drawing.Bitmap(form.Width,form.Height);form.DrawToBitmap(bitmap,new System.Drawing.Rectangle(0,0,form.Width,form.Height));bitmap.Save(args[1]);form.Close();return 0;
             }
             using var mutex = new Mutex(false, @"Local\CopilotKeyFighter-v1");
             bool owned;

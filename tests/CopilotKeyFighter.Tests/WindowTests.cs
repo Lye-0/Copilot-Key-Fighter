@@ -15,14 +15,30 @@ public class WindowTests
         {
             try
             {
-                using var form = new SettingsForm(new(Action:ActionKind.Keyboard, Binding:new()), _ => { });
+                Settings? applied=null;
+                using var form = new SettingsForm(new(Action:ActionKind.Keyboard, Binding:new()), value => applied=value);
                 static IEnumerable<Control> Walk(Control c) => c.Controls.Cast<Control>().SelectMany(x => new[] {x}.Concat(Walk(x)));
                 var controls = Walk(form).ToArray();
-                var combo = Assert.Single(controls.OfType<ComboBox>());
-                Assert.True(combo.SelectedIndex >= 0);
-                Assert.Equal("Delete", combo.GetItemText(combo.SelectedItem));
+                var key = Assert.Single(controls.OfType<Button>(),b=>b.Name=="KeyChoice");
+                Assert.StartsWith("Delete",key.Text);
                 Assert.Equal(3, controls.OfType<RadioButton>().Count());
                 Assert.True(controls.OfType<RadioButton>().Single(x => x.Text == "キーを送る").Checked);
+                form.Show();Application.DoEvents();
+                var save=Assert.Single(controls.OfType<Button>(),b=>b.Name=="SaveSettings");
+                var status=Assert.Single(controls.OfType<Label>(),b=>b.Name=="CurrentStatus");
+                var enabled=Assert.Single(controls.OfType<CheckBox>(),b=>b.Text=="割り当てを有効にする");
+                Assert.False(save.Enabled);Assert.Contains("停止中",status.Text);
+                enabled.Checked=true;Assert.True(save.Enabled);Assert.Contains("停止中",status.Text);
+                enabled.Checked=false;Assert.False(save.Enabled);
+                enabled.Checked=true;save.PerformClick();Assert.NotNull(applied);Assert.True(applied.Enabled);
+                Assert.Equal(46,applied.Binding!.Key);Assert.False(save.Enabled);Assert.Contains("有効",status.Text);
+                form.UpdateRuntimeState(applied,true);Assert.Contains("一時停止中",status.Text);
+                form.ClientSize=new System.Drawing.Size(720,640);Application.DoEvents();
+                Assert.True(form.ClientRectangle.Contains(form.RectangleToClient(save.RectangleToScreen(save.ClientRectangle))));
+                enabled.Checked=false;Application.DoEvents();
+                Assert.True(form.ClientRectangle.Contains(form.RectangleToClient(save.RectangleToScreen(save.ClientRectangle))));
+                enabled.Checked=true;
+                form.Close();
                 complete.SetResult();
             }
             catch (Exception e) { complete.SetException(e); }

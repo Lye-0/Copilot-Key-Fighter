@@ -23,8 +23,9 @@ internal sealed class Resident : ApplicationContext
         receiver = new(this);
         keyboard = new(receiver.Handle, () => foreground?.Request(), testInputTag);
         icon = Program.LoadIcon();
+        menu.Renderer=Visuals.MenuRenderer();menu.ShowImageMargin=false;
         menu.Items.Add("設定…", null, (_, _) => ShowSettings());
-        execute = (ToolStripMenuItem)menu.Items.Add("割り当てたアプリを開く", null, (_, _) => Open());
+        execute = (ToolStripMenuItem)menu.Items.Add("アプリを開く", null, (_, _) => Open());
         pause = (ToolStripMenuItem)menu.Items.Add("一時停止", null, (_, _) => TogglePause());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("終了", null, (_, _) => ExitThread());
@@ -60,6 +61,7 @@ internal sealed class Resident : ApplicationContext
         pause.Enabled = settings.Enabled;
         execute.Enabled = settings.Action == ActionKind.Application && settings.Target != null;
         tray.Text = active ? "Copilot Key Fighter — 有効" : "Copilot Key Fighter — 停止中";
+        if(form is {IsDisposed:false}) form.UpdateRuntimeState(settings,paused);
     }
     void TogglePause()
     {
@@ -84,7 +86,7 @@ internal sealed class Resident : ApplicationContext
     {
         CancelPending();
         if (form is { IsDisposed: false }) { form.Show(); form.Activate(); return; }
-        form = new(settings, Save);
+        form = new(settings, Save, paused);
         form.Show(); form.Activate();
     }
     internal async void Open()
