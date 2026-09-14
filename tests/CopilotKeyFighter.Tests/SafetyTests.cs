@@ -35,8 +35,10 @@ public class SafetyTests
         Assert.False(ReleaseGate.Blocked(_ => false, k => k is 0x86 or 0xFC or 0xE5, 0x2E));
         Assert.True(ReleaseGate.Blocked(k => k == 0x86, _ => false, 0x2E));
         Assert.True(ReleaseGate.Blocked(k => k == 0x41, _ => false, 0x2E));
-        foreach (int key in new[] { 1, 2, 4, 5, 6, 0x10, 0x11, 0x12, 0x5B, 0x5C, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x2E })
+        foreach (int key in new[] { 1, 2, 4, 5, 6, 0x10, 0x11, 0x12, 0x5B, 0x5C, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5 })
             Assert.True(ReleaseGate.Blocked(_ => false, k => k == key, 0x2E));
+        Assert.False(ReleaseGate.Blocked(_ => false, k => k == 0x2E, 0x2E));
+        Assert.True(ReleaseGate.Blocked(k => k == 0x2E, _ => false, 0x2E));
         var g = new CopilotGesture();
         Assert.Equal((true,true), g.Process(0x86,true,true,true,false));
         Assert.Equal((true,false), g.Process(0x86,false,false,false,false));

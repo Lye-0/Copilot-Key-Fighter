@@ -37,7 +37,7 @@ Windows 11 の通知領域に常駐し、Copilot キーの動作を次から選�
 
 ## ビルドとテスト
 
-Windows x64 と .NET 10 SDK が必要です。
+Windows x64 と .NET 10 SDK が必要です。テストは実際のフックとホットキーを使用するため、先に本アプリと旧ランチャーをトレイから終了してください。
 
 ```powershell
 dotnet test tests/CopilotKeyFighter.Tests/CopilotKeyFighter.Tests.csproj -c Release
@@ -53,3 +53,4 @@ GitHub Actions は push / pull request でテストとパッケージ生成を�
 ソースコードは **GPL-3.0-only** です。本文は [LICENSE](LICENSE)。配布したバイナリに対応するソースとビルド手順は、同一バージョンのタグおよびソース ZIP で提供します。
 
 第三者のコンポーネント・マークについては [NOTICE.md](NOTICE.md) を参照してください。
+

@@ -9,7 +9,8 @@ internal sealed class ForegroundHotkey : IDisposable
     const int FirstId = 0x4100;
     readonly nint window;
     int registered;
-    bool armed;
+    volatile bool armed;
+    readonly Native.Input[] pair = [Native.Input.Key(ReservedKey, false, Tag), Native.Input.Key(ReservedKey, true, Tag)];
     long armedAt;
     internal int Notifications { get; private set; }
     internal const uint ReservedKey = 0xFC;
@@ -35,9 +36,8 @@ internal sealed class ForegroundHotkey : IDisposable
     internal void Request()
     {
         if (armed && Environment.TickCount64 - armedAt < 1500) return;
-        armed = true;
         armedAt = Environment.TickCount64;
-        var pair = new[] { Native.Input.Key(ReservedKey, false, Tag), Native.Input.Key(ReservedKey, true, Tag) };
+        armed = true;
         uint sent = Native.SendInput(2, pair, Marshal.SizeOf<Native.Input>());
         if (sent != 2)
         {

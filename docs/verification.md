@@ -49,3 +49,11 @@ The runtime preview is separate from bin/Debug. Before debugging an actual resid
 User testing of the release-gate change still produced no Delete. The subsequent record showed SameInput=false, SameWindow=true, TimedOut=false, PhysicalF23=true and LastInterference=LShiftKey. This establishes that Left Shift arriving within a captured Copilot chord was treated as an unrelated action. Ignoring repeats alone was insufficient because the hook could first observe that modifier down after F23 was captured using Windows modifier state.
 
 The cancellation policy now excludes Left Win/Left Shift belonging to the captured F23 chord, while preserving cancellation by unrelated keys and new modifier actions after the chord ends. All 25 tests passed, including the delayed-modifier sequence. Debug build passed with zero warnings/errors. Physical Delete confirmation is still pending for this follow-up build.
+
+### Native input reproduction and correction
+
+The isolated native pipeline test reproduced the failure with no observed physical keys held and no modifiers down. Its diagnostic showed TargetHeld=true; GetAsyncKeyState(Delete) was already true before the test's first internal notification. The old gate therefore waited for the requested Delete itself and never sent it. The origin of that pre-existing asynchronous state is unknown; no claim is made that a specific external tool caused it.
+
+The gate now protects observed physical presses plus asynchronous modifier/mouse state, without blocking on the non-modifier target's asynchronous state alone. The internal mask pair is also emitted directly on capture, before UI scheduling, to avoid a late mask after physical Win release. The foreground-change cancellation remains enabled.
+
+DeletePipelineTests passed through the native hook, resident dispatch and SendInput and changed its owned TextBox from abc to bc three consecutive times. Modifier-release checks passed after each attempt. Production still ignores injected Copilot chords; tagged injection is enabled only on the isolated test instance. All 26 tests passed, and Debug built with zero warnings/errors. This materially strengthens the previous pure-state-machine checks; physical hardware confirmation is still separate.

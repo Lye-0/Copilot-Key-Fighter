@@ -1,10 +1,10 @@
 internal sealed class Resident : ApplicationContext
 {
     internal const string WindowTitle = "CopilotKeyFighter.Resident.v1";
-    internal const uint SettingsMessage = 0x8001, ExitMessage = 0x8002, CopilotMessage = 0x8004;
+    internal const uint SettingsMessage = 0x8001, ExitMessage = 0x8002, CopilotMessage = 0x8004, InputErrorMessage = 0x8006;
     readonly Receiver receiver;
     readonly KeyboardHook keyboard;
-    readonly SettingsStore store = new(Program.StateDirectory);
+    readonly SettingsStore store;
     readonly NotifyIcon tray;
     readonly System.Drawing.Icon icon;
     readonly ContextMenuStrip menu = new();
@@ -17,10 +17,11 @@ internal sealed class Resident : ApplicationContext
     bool paused, opening, sending, disposed;
     int generation;
 
-    internal Resident(bool background)
+    internal Resident(bool background, SettingsStore? isolatedStore = null, nuint testInputTag = 0)
     {
+        store = isolatedStore ?? new(Program.StateDirectory);
         receiver = new(this);
-        keyboard = new(receiver.Handle);
+        keyboard = new(receiver.Handle, () => foreground?.Request(), testInputTag);
         icon = Program.LoadIcon();
         menu.Items.Add("設定…", null, (_, _) => ShowSettings());
         execute = (ToolStripMenuItem)menu.Items.Add("割り当てたアプリを開く", null, (_, _) => Open());
@@ -99,9 +100,8 @@ internal sealed class Resident : ApplicationContext
     {
         TraceGesture("detected");
         if (!keyboard.Enabled) return;
-        // A consumed non-character chord also prevents a bare Win release from opening Start.
-        // Use the same registered internal pair for all actions; never synthesize modifier keys here.
-        try { foreground?.Request(); } catch (Exception e) { Notify(e); return; }
+        // The hook emits the internal pair before returning the captured F23 event.
+        // Waiting for this UI message can be too late to mask the physical Win release.
         if (settings.Action == ActionKind.Application)
         {
             if (opening) return;
@@ -138,8 +138,9 @@ internal sealed class Resident : ApplicationContext
     {
         try
         {
-            Directory.CreateDirectory(Program.StateDirectory);
-            File.WriteAllText(Path.Combine(Program.StateDirectory, "last-gesture.json"), System.Text.Json.JsonSerializer.Serialize(new { Time = DateTimeOffset.Now, Result = result, Enabled = keyboard.Enabled, Action = settings.Action.ToString(), Detail = detail, Release = keyboard.ReleaseDiagnostic }, SettingsStore.Options));
+            string directory = Path.GetDirectoryName(store.FilePath)!;
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "last-gesture.json"), System.Text.Json.JsonSerializer.Serialize(new { Time = DateTimeOffset.Now, Result = result, Enabled = keyboard.Enabled, Action = settings.Action.ToString(), Detail = detail, Release = keyboard.ReleaseDiagnostic, GuardKeys = new[] {1,2,4,5,6,0x10,0x11,0x12,0x5B,0x5C,0xA0,0xA1,0xA2,0xA3,0xA4,0xA5}.Where(Native.Down).Select(k => ((Keys)k).ToString()).ToArray(), TargetHeld = settings.Binding != null && Native.Down(settings.Binding.Key) }, SettingsStore.Options));
         }
         catch { /* Diagnostics must never interrupt input processing. */ }
     }
@@ -171,6 +172,11 @@ internal sealed class Resident : ApplicationContext
             if (m.Msg == SettingsMessage) owner.ShowSettings();
             else if (m.Msg == ExitMessage) owner.ExitThread();
             else if (m.Msg == CopilotMessage) owner.Copilot((int)m.WParam, m.LParam);
+            else if (m.Msg == InputErrorMessage)
+            {
+                owner.CancelPending();
+                owner.Notify(owner.keyboard.CaptureError ?? new InvalidOperationException("内部通知に失敗しました。"));
+            }
             else if (m.Msg == 0x312 && owner.foreground?.Accept(m.WParam) == true)
             { if (owner.keyboard.Enabled && owner.settings.Action == ActionKind.Application) owner.Open(); }
             else base.WndProc(ref m);
