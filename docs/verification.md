@@ -35,3 +35,11 @@ dotnet test tests/CopilotKeyFighter.Tests/CopilotKeyFighter.Tests.csproj -c Rele
 ```
 
 Physical testing should use a separate app if exiting the current conversation host would interrupt the session. Stop the legacy resident before enabling the distribution build; do not register both as active keyboard monitors.
+
+## 2026-09-15 release-gate correction
+
+A physical Copilot attempt reached the action handler, kept the same input sequence and foreground window, but timed out waiting for key release. The old gate scanned the entire asynchronous virtual-key range. Which virtual key blocked that attempt was not recorded, so the precise hardware cause is not established.
+
+ReleaseGate now uses physical down/up observed by the hook, including the suppressed F23 pair, plus explicit Windows-state checks for modifiers, mouse buttons and the target key. A regression test checks that reserved/IME/F23 async states alone do not block sending, while real held keys and modifiers do. The internal notification pair release test also passed. All 23 tests passed. Physical Delete output on this updated build is awaiting user confirmation.
+
+The runtime preview is separate from bin/Debug. Before debugging an actual resident in Visual Studio, exit any running instance from the tray. A running Debug executable is locked by Windows and must exit before it can be rebuilt. Diagnostics overwrite only last-gesture.json with the last action result; they do not record text or a keyboard history.

@@ -32,7 +32,8 @@ internal sealed class KeyboardHook : IDisposable
         try
         {
             threadId = Native.GetCurrentThreadId();
-            for (int key = 0; key < physical.Length; key++) physical[key] = Native.Down(key) ? 1 : 0;
+            // Physical state comes from observed events, not reserved virtual-key snapshots.
+            // ReleaseGate separately checks pre-existing modifiers and the target key.
             Native.PeekMessage(out _, 0, 0, 0, 0);
             hook = Native.SetWindowsHookEx(13, callback, Native.GetModuleHandle(null), 0);
             if (hook == 0) throw new Win32Exception(Marshal.GetLastWin32Error());

@@ -26,15 +26,10 @@ internal static class KeySender
     static bool unavailable;
     internal const nuint Tag = 0x434B4631;
     internal static bool IsExtended(int key) => key is 0x21 or 0x22 or 0x23 or 0x24 or 0x25 or 0x26 or 0x27 or 0x28 or 0x2D or 0x2E or 0x5B or 0x5C or 0x6F or >= 0xA6 and <= 0xB7;
-    internal static bool AnyKeyDown()
-    {
-        for (int key = 1; key < 255; key++) if (Native.Down(key)) return true;
-        return false;
-    }
     internal static void Send(KeyBinding binding, Func<int, bool>? physicallyDown = null)
     {
         if (unavailable) throw new InvalidOperationException("前回のキー解放を確認できなかったため送信を停止しています。キーを離して本アプリを再起動してください。");
-        if (AnyKeyDown()) throw new InvalidOperationException("押されているキーを離してから、もう一度お試しください。");
+        if (ReleaseGate.Blocked(physicallyDown ?? (_ => false), Native.Down, binding.Key)) throw new InvalidOperationException("押されているキーを離してから、もう一度お試しください。");
         var events = KeySequence.Create(binding);
         var input = events.Select(Convert).ToArray();
         uint sent = Native.SendInput((uint)input.Length, input, Marshal.SizeOf<Native.Input>());

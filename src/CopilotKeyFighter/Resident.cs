@@ -39,6 +39,7 @@ internal sealed class Resident : ApplicationContext
         if (loaded.Error != null) tray.ShowBalloonTip(5000, "設定の確認が必要です", loaded.Error, ToolTipIcon.Warning);
         if (!background || !File.Exists(store.FilePath) || loaded.Error != null)
             Native.PostMessage(receiver.Handle, SettingsMessage, 0, 0);
+        TraceGesture("ready");
     }
     void CancelPending()
     {
@@ -96,6 +97,7 @@ internal sealed class Resident : ApplicationContext
     }
     async void Copilot(int serial, nint originalWindow)
     {
+        TraceGesture("detected");
         if (!keyboard.Enabled) return;
         // A consumed non-character chord also prevents a bare Win release from opening Start.
         // Use the same registered internal pair for all actions; never synthesize modifier keys here.
@@ -117,15 +119,29 @@ internal sealed class Resident : ApplicationContext
             while (Environment.TickCount64 < deadline)
             {
                 await Task.Delay(10, token);
-                var decision = PendingGesture.Evaluate(Environment.TickCount64, deadline, version == generation, keyboard.Enabled, serial == keyboard.Interference, Native.GetForegroundWindow() == originalWindow, KeySender.AnyKeyDown());
-                if (decision == PendingDecision.Cancel) return;
+                var decision = PendingGesture.Evaluate(Environment.TickCount64, deadline, version == generation, keyboard.Enabled, serial == keyboard.Interference, Native.GetForegroundWindow() == originalWindow, ReleaseGate.Blocked(keyboard.PhysicallyDown, Native.Down, binding.Key));
+                if (decision == PendingDecision.Cancel)
+                {
+                    TraceGesture("cancelled", new { SameGeneration = version == generation, Enabled = keyboard.Enabled, SameInput = serial == keyboard.Interference, SameWindow = Native.GetForegroundWindow() == originalWindow, TimedOut = Environment.TickCount64 >= deadline, PhysicalF23 = keyboard.PhysicallyDown(0x86), Win = Native.Down(0x5B) || Native.Down(0x5C), Shift = Native.Down(0x10), Control = Native.Down(0x11), Alt = Native.Down(0x12) });
+                    return;
+                }
                 if (decision == PendingDecision.Wait) continue;
-                KeySender.Send(binding, keyboard.PhysicallyDown); return;
+                KeySender.Send(binding, keyboard.PhysicallyDown); TraceGesture("sent"); return;
             }
+            TraceGesture("release-timeout", new { Win = Native.Down(0x5B) || Native.Down(0x5C), Shift = Native.Down(0x10), Control = Native.Down(0x11), Alt = Native.Down(0x12), F23 = Native.Down(0x86), InternalKey = Native.Down(0xFC) });
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) { Notify(e); }
+        catch (Exception e) { TraceGesture("send-error", new { Error = e.Message }); Notify(e); }
         finally { sending = false; }
+    }
+    void TraceGesture(string result, object? detail = null)
+    {
+        try
+        {
+            Directory.CreateDirectory(Program.StateDirectory);
+            File.WriteAllText(Path.Combine(Program.StateDirectory, "last-gesture.json"), System.Text.Json.JsonSerializer.Serialize(new { Time = DateTimeOffset.Now, Result = result, Enabled = keyboard.Enabled, Action = settings.Action.ToString(), Detail = detail }, SettingsStore.Options));
+        }
+        catch { /* Diagnostics must never interrupt input processing. */ }
     }
     void Notify(Exception e)
     {
