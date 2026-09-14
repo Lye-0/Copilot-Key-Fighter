@@ -104,6 +104,11 @@ internal sealed class UiCheck:CheckBox
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal bool Switch {get;set;}
     internal UiCheck(){AutoSize=false;Height=34;Width=600;Cursor=Cursors.Hand;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.Opaque|ControlStyles.ResizeRedraw,true);}
+    public override Size GetPreferredSize(Size proposedSize)
+    {
+        if(Switch||Chip)return new Size(TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPadding).Width+(Chip?30+22:42+36),Math.Max(42,Font.Height+16));
+        return base.GetPreferredSize(proposedSize);
+    }
     protected override void OnPaintBackground(PaintEventArgs e)=>Visuals.PaintCanvas(this,e.Graphics);
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
@@ -116,11 +121,15 @@ internal sealed class UiCheck:CheckBox
         if(Chip || Switch)
         {
             int trackWidth=Chip?30:42,trackHeight=Chip?16:22;
-            var track=new Rectangle(Width-trackWidth-6,(Height-trackHeight)/2,trackWidth,trackHeight);
+            int padding=Chip?8:12,gap=Chip?6:12;
+            int textWidth=TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPadding).Width;
+            int trackX=Math.Min(Width-trackWidth-padding,padding+textWidth+gap);
+            Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Checked&&!SystemInformation.HighContrast?Color.FromArgb(239,248,249):Visuals.Surface,Focused?Visuals.Accent:Visuals.Border);
+            var track=new Rectangle(trackX,(Height-trackHeight)/2,trackWidth,trackHeight);
             Visuals.Box(e.Graphics,track,Checked?Visuals.Accent:Visuals.Border,Focused?Visuals.Accent:Checked?Visuals.Accent:Visuals.Border,trackHeight/2);
             int diameter=trackHeight-6;using var knob=new SolidBrush(SystemColors.Window);
             e.Graphics.FillEllipse(knob,Checked?track.Right-diameter-3:track.Left+3,track.Top+3,diameter,diameter);
-            TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(Chip?2:0,0,Width-trackWidth-14,Height),Enabled?Visuals.Ink:Visuals.Muted,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
+            TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(padding,0,Math.Max(0,trackX-padding-gap),Height),Enabled?Visuals.Ink:Visuals.Muted,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPadding);
         }
         else
         {

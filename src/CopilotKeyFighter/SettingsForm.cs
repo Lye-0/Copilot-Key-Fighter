@@ -3,17 +3,17 @@ using System.Drawing;
 internal sealed class SettingsForm:Form
 {
     readonly Action<Settings> save;
-    readonly UiCheck enabled=new(){Text="割り当てを有効にする",Switch=true,Dock=DockStyle.Fill};
+    readonly UiCheck enabled=new(){Text="割り当てを有効にする",Switch=true,AutoSize=true,Anchor=AnchorStyles.Left,Margin=new Padding(0,0,0,6)};
     readonly ModeSelector action=new();
     readonly UiCheck existing=new(){Text="起動済みなら、そのウィンドウを表示",Dock=DockStyle.Fill};
-    readonly UiCheck startup=new(){Text="ログイン時に自動起動",Switch=true,Dock=DockStyle.Fill};
+    readonly UiCheck startup=new(){Text="ログイン時に自動起動",Switch=true,AutoSize=true,Anchor=AnchorStyles.Left,Margin=new Padding(0,0,0,6)};
     readonly UiCheck ctrl=Chip("Ctrl"),shift=Chip("Shift"),alt=Chip("Alt"),win=Chip("Win");
     readonly TextBox id=new(){ReadOnly=true},arguments=new(),directory=new();
     readonly Label appName=new(){AutoSize=true,Text="アプリを選択してください"};
     readonly Label current=new(){AutoSize=true,Name="CurrentStatus"};
     readonly Label modeHelp=new(){AutoSize=true};
     readonly Label feedback=new(){AutoSize=false,Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,AutoEllipsis=true};
-    readonly Label combination=new(){AutoSize=true};
+    readonly KeyChordView combination=new();
     readonly UiButton chooseKey=new(){Width=250,Text="Delete  ▾",Name="KeyChoice"};
     readonly UiButton chooseApp=new(){Text="アプリを選択",Width=190};
     readonly UiButton tryApp=new(){Text="起動を試す",Width=130};
@@ -129,7 +129,7 @@ internal sealed class SettingsForm:Form
         modeHelp.ForeColor=Visuals.Muted;
         chooseKey.Text=KeyNames.Name(keyCode)+"  ▾";
         chooseKey.AccessibleName="送信するキー："+KeyNames.Name(keyCode);
-        combination.Text=KeyNames.Binding(Read().Binding!);combination.ForeColor=Visuals.Accent;
+        combination.SetBinding(Read().Binding!);
         tryApp.Enabled=target!=null;chooseApp.Text="一覧から選ぶ…";
         apply.Enabled=Dirty;
         ShowFeedback(Dirty?"未保存の変更があります。保存すると適用されます。":"変更はありません。",false);
@@ -178,7 +178,7 @@ internal sealed class SettingsForm:Form
         }
     }
     internal static UiButton Button(string text,EventHandler handler,int width=140){var b=new UiButton{Text=text,Width=width};b.Click+=handler;return b;}
-    static UiCheck Chip(string text)=>new(){Text=text,Chip=true,Width=104,Height=42,Margin=new Padding(0,0,8,0)};
+    static UiCheck Chip(string text)=>new(){Text=text,Chip=true,Width=112,Height=42,Margin=new Padding(0,0,6,0)};
     internal static TableLayoutPanel Grid()=>new(){ColumnCount=1,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Dock=DockStyle.Top};
     internal static FlowLayoutPanel Row()=>new(){AutoSize=true,Dock=DockStyle.Fill,WrapContents=true,Margin=new Padding(0,4,0,8)};
     internal static void Add(TableLayoutPanel p,Control c){p.RowStyles.Add(new RowStyle(SizeType.AutoSize));p.Controls.Add(c,0,p.RowCount++);}

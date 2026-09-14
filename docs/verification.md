@@ -77,3 +77,9 @@ User screenshots showed black checkbox backgrounds and unpainted button corners 
 
 The three modes were reviewed after grouping global settings separately. App-selection methods share a row; test launch is separated at its right. Modifier switches and the main key share a row with a plus sign; the output summary has an explicit label and no transformation arrow. Flat accordion headers reserve a separate chevron area. Expanded key-test and advanced-app content were rendered at the bottom scroll position to verify access. UI tests cover grouping, same-row chord layout, expansion height, non-overlap, scrollbar availability and Save visibility. Paint coverage now includes global toggles and disclosure headers.
 
+### 2026-09-15 toggle grouping and predictable picker scrolling
+
+Toggle labels and tracks now share an outline and adjacent placement. The key summary uses individual keycaps separated by plus signs. The keyboard page was rendered with Ctrl + Shift + Left. Tests exercise real list controls with WM_MOUSEWHEEL messages, checking one-row movement for both ordinary and large deltas, fractional accumulation, direction changes, the top boundary and unchanged selection. Physical mouse/touchpad feel remains a user check; the application adds no inertia and caps each delivered wheel event to one row.
+
+
+All 29 tests passed, including native Delete delivery and modifier release. Debug build completed with zero warnings and errors. Expanded key-test content and the key picker were rendered for inspection.

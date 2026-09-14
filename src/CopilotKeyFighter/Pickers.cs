@@ -2,7 +2,7 @@ using System.Drawing;
 
 internal sealed class KeyPicker:Form
 {
-    readonly ListBox list=new(){Dock=DockStyle.Fill,IntegralHeight=false,BorderStyle=BorderStyle.None,DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=42};
+    readonly SteadyListBox list=new(){Dock=DockStyle.Fill,IntegralHeight=false,BorderStyle=BorderStyle.None,DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=42};
     readonly TextBox search=new(){PlaceholderText="キー名で検索（Delete、F5、音量など）"};
     readonly UiButton choose=new(){Text="このキーを選択",Width=180,Primary=true};
     readonly Label count=new(){Dock=DockStyle.Bottom,Height=30,ForeColor=Visuals.Muted};
@@ -35,7 +35,7 @@ internal sealed class KeyPicker:Form
 internal sealed class AppPicker:Form
 {
     readonly TextBox search=new(){PlaceholderText="アプリ名で検索"};
-    readonly ListBox list=new(){Dock=DockStyle.Fill,DisplayMember="Name",IntegralHeight=false,BorderStyle=BorderStyle.None,DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=48};
+    readonly SteadyListBox list=new(){Dock=DockStyle.Fill,DisplayMember="Name",IntegralHeight=false,BorderStyle=BorderStyle.None,DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=48};
     readonly Label state=new(){Dock=DockStyle.Bottom,Height=38,Text="アプリを読み込んでいます…",ForeColor=Visuals.Muted};
     readonly UiButton select=new(){Text="このアプリを選択",Width=190,Primary=true,Enabled=false};
     readonly Dictionary<string,Icon> icons=new();
