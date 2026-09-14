@@ -44,3 +44,6 @@ The historical migration plan remains under docs/plans; this document describes 
 The native DeletePipelineTests instantiate an isolated settings store and opt in to a tagged synthetic Copilot chord for that test hook only. Production leaves the tag at zero and rejects injected Copilot chords. The test focuses its own TextBox, verifies foreground ownership before injection, checks abc becomes bc three times, and checks modifier release. This test must run with the normal resident stopped because it exercises the actual global hook and internal hotkey registrations.
 
 
+
+Owner-drawn controls explicitly fill their entire client area with the opaque parent surface at the start of OnPaint. They use Opaque and ResizeRedraw and do not rely on the background-erase pass of ButtonBase or DrawToBitmap. This covers checkbox labels and the area outside rounded button corners during partial repainting.
+

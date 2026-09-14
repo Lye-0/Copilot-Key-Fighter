@@ -39,6 +39,13 @@ internal static class Visuals
         foreach(Control child in parent.Controls) Apply(child);
     }
     internal static void Primary(Button button) { if(button is UiButton b) b.Primary = true; }
+    internal static void PaintCanvas(Control control,Graphics graphics)
+    {
+        Control? parent=control.Parent;
+        while(parent!=null && parent.BackColor.A!=255) parent=parent.Parent;
+        using var brush=new SolidBrush(parent?.BackColor ?? Paper);
+        graphics.FillRectangle(brush,control.ClientRectangle);
+    }
     internal static GraphicsPath Round(Rectangle rect, int radius)
     {
         var p=new GraphicsPath(); int d=Math.Min(radius*2,Math.Min(rect.Width,rect.Height));
@@ -70,7 +77,8 @@ internal class UiButton:Button
     bool hover,pressed,primary;
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal bool Primary {get=>primary;set{primary=value;Invalidate();}}
-    internal UiButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);Height=42;Width=130;Cursor=Cursors.Hand;Margin=new Padding(0,0,8,0);}
+    internal UiButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.Opaque|ControlStyles.ResizeRedraw,true);Height=42;Width=130;Cursor=Cursors.Hand;Margin=new Padding(0,0,8,0);}
+    protected override void OnPaintBackground(PaintEventArgs e)=>Visuals.PaintCanvas(this,e.Graphics);
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){hover=pressed=false;Invalidate();base.OnMouseLeave(e);}
     protected override void OnMouseDown(MouseEventArgs e){pressed=true;Invalidate();base.OnMouseDown(e);}
@@ -80,6 +88,7 @@ internal class UiButton:Button
     protected override void OnEnabledChanged(EventArgs e){Invalidate();base.OnEnabledChanged(e);}
     protected override void OnPaint(PaintEventArgs e)
     {
+        Visuals.PaintCanvas(this,e.Graphics);
         Color fill=!Enabled?Visuals.Paper:primary?Visuals.Navy:(hover||pressed)?SystemInformation.HighContrast?SystemColors.Highlight:Color.FromArgb(229,242,245):Visuals.Surface;
         Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),fill,Focused?Visuals.Accent:primary&&Enabled?Visuals.Navy:Visuals.Border);
         TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(10,0,Width-20,Height),!Enabled?Visuals.Muted:primary||(SystemInformation.HighContrast&&(hover||pressed))?SystemColors.HighlightText:Visuals.Ink,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
@@ -92,7 +101,8 @@ internal sealed class UiCheck:CheckBox
     bool hover;
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal bool Chip {get;set;}
-    internal UiCheck(){AutoSize=false;Height=34;Width=600;Cursor=Cursors.Hand;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);}
+    internal UiCheck(){AutoSize=false;Height=34;Width=600;Cursor=Cursors.Hand;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.Opaque|ControlStyles.ResizeRedraw,true);}
+    protected override void OnPaintBackground(PaintEventArgs e)=>Visuals.PaintCanvas(this,e.Graphics);
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
     protected override void OnCheckedChanged(EventArgs e){Invalidate();base.OnCheckedChanged(e);}
@@ -100,6 +110,7 @@ internal sealed class UiCheck:CheckBox
     protected override void OnLostFocus(EventArgs e){Invalidate();base.OnLostFocus(e);}
     protected override void OnPaint(PaintEventArgs e)
     {
+        Visuals.PaintCanvas(this,e.Graphics);
         if(Chip)
         {
             Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Checked?Visuals.Navy:Visuals.Surface,Focused?Visuals.Accent:Visuals.Border);
@@ -133,13 +144,15 @@ internal sealed class ModeSelector:FlowLayoutPanel
     sealed class Choice:RadioButton
     {
         bool hover;
-        internal Choice(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);Cursor=Cursors.Hand;}
+        internal Choice(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.Opaque|ControlStyles.ResizeRedraw,true);Cursor=Cursors.Hand;}
+        protected override void OnPaintBackground(PaintEventArgs e)=>Visuals.PaintCanvas(this,e.Graphics);
         protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
         protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
         protected override void OnGotFocus(EventArgs e){Invalidate();base.OnGotFocus(e);}
         protected override void OnLostFocus(EventArgs e){Invalidate();base.OnLostFocus(e);}
         protected override void OnPaint(PaintEventArgs e)
         {
+            Visuals.PaintCanvas(this,e.Graphics);
             Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Checked?Visuals.Navy:Visuals.Surface,Focused||hover?Visuals.Accent:Visuals.Border);
             TextRenderer.DrawText(e.Graphics,Text,Font,ClientRectangle,Checked?SystemColors.HighlightText:Visuals.Ink,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);
             if(Checked){using var b=new SolidBrush(SystemInformation.HighContrast?SystemColors.HighlightText:Color.FromArgb(0,211,220));e.Graphics.FillRectangle(b,14,Height-6,Width-28,3);}

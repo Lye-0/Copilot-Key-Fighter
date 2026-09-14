@@ -30,6 +30,16 @@
 - files: `src/CopilotKeyFighter/ReleaseGate.cs`, `src/CopilotKeyFighter/Resident.cs`, `tests/CopilotKeyFighter.Tests/DeletePipelineTests.cs` …
 - memory: `agent-knowledge/entries/2026-09-15-target-state-gate-57f3a1.md`
 
+## settings-ui
+
+### 独自描画の背景を DrawToBitmap の事前消去に依存させない
+- id: `rm-20260915-owner-paint-background`
+- type: `failure`
+- maturity: `candidate`
+- tags: `winforms`, `painting`, `black-background`
+- files: `src/CopilotKeyFighter/Visuals.cs`, `tests/CopilotKeyFighter.Tests/PaintTests.cs`, `docs/verification.md`
+- memory: `agent-knowledge/entries/2026-09-15-owner-paint-background-dc3508.md`
+
 ## Search guidance
 
 Use topic, tags, related paths, filenames, and text search such as `rg` to shortlist entries.

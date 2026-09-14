@@ -67,3 +67,8 @@ On 2026-09-15, the user confirmed that operation verification was complete after
 
 The UI was restructured around applied status, draft selection and explicit save feedback. UI assertions cover preserving Delete, unapplied draft state, reverting edits, applying settings, live pause status and Save visibility at 720 x 640 client size. Application/key/suppression pages and the searchable key picker were rendered for visual review. Windows file dialogs and scrollbars remain native intentionally. Additional DPI settings and screen-reader behavior remain manual checks.
 
+
+### 2026-09-15 owner-paint black-background correction
+
+User screenshots showed black checkbox backgrounds and unpainted button corners across all three modes. A regression test drawing OnPaint directly onto a black bitmap reproduced the defect against ce606ee; the corrected implementation fills the complete client surface and passes the same test. Cases cover two parent background colors, checked/unchecked and enabled/disabled states, and two widths. This corrects the earlier reliance on complete DrawToBitmap previews.
+
