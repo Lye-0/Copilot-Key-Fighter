@@ -101,6 +101,8 @@ internal sealed class UiCheck:CheckBox
     bool hover;
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal bool Chip {get;set;}
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    internal bool Switch {get;set;}
     internal UiCheck(){AutoSize=false;Height=34;Width=600;Cursor=Cursors.Hand;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.Opaque|ControlStyles.ResizeRedraw,true);}
     protected override void OnPaintBackground(PaintEventArgs e)=>Visuals.PaintCanvas(this,e.Graphics);
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
@@ -111,10 +113,14 @@ internal sealed class UiCheck:CheckBox
     protected override void OnPaint(PaintEventArgs e)
     {
         Visuals.PaintCanvas(this,e.Graphics);
-        if(Chip)
+        if(Chip || Switch)
         {
-            Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Checked?Visuals.Navy:Visuals.Surface,Focused?Visuals.Accent:Visuals.Border);
-            TextRenderer.DrawText(e.Graphics,Text,Font,ClientRectangle,Checked?SystemColors.HighlightText:Visuals.Ink,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);
+            int trackWidth=Chip?30:42,trackHeight=Chip?16:22;
+            var track=new Rectangle(Width-trackWidth-6,(Height-trackHeight)/2,trackWidth,trackHeight);
+            Visuals.Box(e.Graphics,track,Checked?Visuals.Accent:Visuals.Border,Focused?Visuals.Accent:Checked?Visuals.Accent:Visuals.Border,trackHeight/2);
+            int diameter=trackHeight-6;using var knob=new SolidBrush(SystemColors.Window);
+            e.Graphics.FillEllipse(knob,Checked?track.Right-diameter-3:track.Left+3,track.Top+3,diameter,diameter);
+            TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(Chip?2:0,0,Width-trackWidth-14,Height),Enabled?Visuals.Ink:Visuals.Muted,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
         }
         else
         {
@@ -135,12 +141,18 @@ internal sealed class ModeSelector:FlowLayoutPanel
     internal int SelectedIndex {get=>Array.FindIndex(choices,c=>c.Checked);set{if(value>=0&&value<choices.Length)choices[value].Checked=true;}}
     internal ModeSelector()
     {
-        AutoSize=true;Dock=DockStyle.Fill;WrapContents=false;Margin=new Padding(0,0,0,4);
-        choices=new[]{"アプリを開く","キーを送る","起動を抑止"}.Select(t=>(RadioButton)new Choice {Text=t,Height=54,Width=220,Margin=new Padding(0,0,8,0)}).ToArray();
+        AutoSize=true;Dock=DockStyle.Fill;WrapContents=false;Margin=new Padding(0,0,0,8);Padding=new Padding(4);
+        BackColor=SystemInformation.HighContrast?SystemColors.Control:Color.FromArgb(226,234,240);
+        choices=new[]{"アプリを開く","キーを送る","起動を抑止"}.Select(t=>(RadioButton)new Choice {Text=t,Height=46,Width=220,Margin=Padding.Empty}).ToArray();
         foreach(var c in choices){Controls.Add(c);c.CheckedChanged+=(_,_)=>{c.Invalidate();if(c.Checked)SelectedIndexChanged?.Invoke(this,EventArgs.Empty);};}
-        SizeChanged+=(_,_)=>{foreach(var c in choices)c.Width=Math.Max(130,(ClientSize.Width-24)/3);};SelectedIndex=0;
+        SizeChanged+=(_,_)=>{foreach(var c in choices)c.Width=Math.Max(130,(ClientSize.Width-Padding.Horizontal)/3);};SelectedIndex=0;
     }
     internal void RefreshColors(){foreach(var c in choices)c.Invalidate();}
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        Visuals.PaintCanvas(this,e.Graphics);
+        if(Width>2&&Height>2)Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),BackColor,BackColor,10);
+    }
     sealed class Choice:RadioButton
     {
         bool hover;
@@ -153,9 +165,9 @@ internal sealed class ModeSelector:FlowLayoutPanel
         protected override void OnPaint(PaintEventArgs e)
         {
             Visuals.PaintCanvas(this,e.Graphics);
-            Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Checked?Visuals.Navy:Visuals.Surface,Focused||hover?Visuals.Accent:Visuals.Border);
+            if(Checked)Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Visuals.Navy,Focused?Visuals.Accent:Visuals.Navy);
+            else if(hover)Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Visuals.Surface,Visuals.Surface);
             TextRenderer.DrawText(e.Graphics,Text,Font,ClientRectangle,Checked?SystemColors.HighlightText:Visuals.Ink,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);
-            if(Checked){using var b=new SolidBrush(SystemInformation.HighContrast?SystemColors.HighlightText:Color.FromArgb(0,211,220));e.Graphics.FillRectangle(b,14,Height-6,Width-28,3);}
             if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(5,5,Width-11,Height-11));
         }
     }

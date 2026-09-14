@@ -3,10 +3,10 @@ using System.Drawing;
 internal sealed class SettingsForm:Form
 {
     readonly Action<Settings> save;
-    readonly UiCheck enabled=new(){Text="割り当てを有効にする",Dock=DockStyle.Fill};
+    readonly UiCheck enabled=new(){Text="割り当てを有効にする",Switch=true,Dock=DockStyle.Fill};
     readonly ModeSelector action=new();
     readonly UiCheck existing=new(){Text="起動済みなら、そのウィンドウを表示",Dock=DockStyle.Fill};
-    readonly UiCheck startup=new(){Text="ログイン時に自動起動",Dock=DockStyle.Fill};
+    readonly UiCheck startup=new(){Text="ログイン時に自動起動",Switch=true,Dock=DockStyle.Fill};
     readonly UiCheck ctrl=Chip("Ctrl"),shift=Chip("Shift"),alt=Chip("Alt"),win=Chip("Win");
     readonly TextBox id=new(){ReadOnly=true},arguments=new(),directory=new();
     readonly Label appName=new(){AutoSize=true,Text="アプリを選択してください"};
@@ -15,7 +15,7 @@ internal sealed class SettingsForm:Form
     readonly Label feedback=new(){AutoSize=false,Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,AutoEllipsis=true};
     readonly Label combination=new(){AutoSize=true};
     readonly UiButton chooseKey=new(){Width=250,Text="Delete  ▾",Name="KeyChoice"};
-    readonly UiButton chooseApp=new(){Text="アプリを選択",Width=160};
+    readonly UiButton chooseApp=new(){Text="アプリを選択",Width=190};
     readonly UiButton tryApp=new(){Text="起動を試す",Width=130};
     readonly UiButton apply=new(){Text="保存",Width=110,Primary=true,Name="SaveSettings"};
     readonly TableLayoutPanel appPanel=Grid(),keyPanel=Grid(),details=Grid();
@@ -33,51 +33,62 @@ internal sealed class SettingsForm:Form
         this.save=save;this.saved=settings;this.paused=paused;
         Text="Copilot Key Fighter — 設定";ownedIcon=Program.LoadIcon();Icon=ownedIcon;
         Font=new Font("Yu Gothic UI",10);BackColor=Visuals.Paper;ForeColor=Visuals.Ink;
-        AutoScaleMode=AutoScaleMode.Dpi;ClientSize=new Size(820,760);MinimumSize=new Size(720,640);StartPosition=FormStartPosition.CenterScreen;
-        var header=new Panel{Dock=DockStyle.Top,Height=86,Padding=new Padding(28,16,28,12),BackColor=Visuals.Surface};
-        var logo=new PictureBox{Image=ownedIcon.ToBitmap(),SizeMode=PictureBoxSizeMode.CenterImage,Dock=DockStyle.Left,Width=48};
-        var heading=new Label{Text="Copilot Key Fighter",Font=new Font(Font.FontFamily,16,FontStyle.Bold),AutoSize=true,Location=new Point(86,12)};
-        current.Location=new Point(88,48);header.Controls.AddRange([logo,heading,current]);
-        var content=Grid();content.Dock=DockStyle.Fill;content.AutoScroll=true;content.Padding=new Padding(28,20,28,12);
+        AutoScaleMode=AutoScaleMode.Dpi;ClientSize=new Size(840,820);MinimumSize=new Size(720,640);StartPosition=FormStartPosition.CenterScreen;
+        var header=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=2,RowCount=2,Padding=new Padding(28,14,28,12),BackColor=Visuals.Surface};
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,48));header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        header.RowStyles.Add(new RowStyle(SizeType.AutoSize));header.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        var logo=new PictureBox{Image=ownedIcon.ToBitmap(),SizeMode=PictureBoxSizeMode.CenterImage,Dock=DockStyle.Fill};
+        var heading=new Label{Text="Copilot Key Fighter",Font=new Font(Font.FontFamily,16,FontStyle.Bold),AutoSize=true,Margin=new Padding(12,0,0,2)};
+        current.Margin=new Padding(12,0,0,0);header.Controls.Add(logo,0,0);header.SetRowSpan(logo,2);header.Controls.Add(heading,1,0);header.Controls.Add(current,1,1);
+        header.SizeChanged+=(_,_)=>current.MaximumSize=new Size(Math.Max(200,header.Width-header.Padding.Horizontal-64),0);
+        var viewport=new Panel{Dock=DockStyle.Fill,AutoScroll=true,Name="SettingsViewport"};
+        var content=Grid();content.Dock=DockStyle.Top;content.Padding=new Padding(28,20,28,12);viewport.Controls.Add(content);
         var footer=new TableLayoutPanel{Dock=DockStyle.Bottom,Height=76,ColumnCount=2,Padding=new Padding(28,14,28,14),BackColor=Visuals.Surface};
         footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,244));
         var buttons=Row();buttons.WrapContents=false;buttons.AutoSize=true;buttons.Controls.Add(Button("閉じる",(_,_)=>Close(),100));buttons.Controls.Add(apply);
         footer.Controls.Add(feedback,0,0);footer.Controls.Add(buttons,1,0);
-        Controls.Add(content);Controls.Add(footer);Controls.Add(header);
-        Add(content,Title("Copilot キーの動作"));Add(content,enabled);Add(content,action);Add(content,modeHelp);
+        Controls.Add(viewport);Controls.Add(footer);Controls.Add(header);
+        var general=Grid();general.Name="GlobalSettings";general.Padding=new Padding(16,8,16,12);general.BackColor=Visuals.Surface;general.Margin=new Padding(0,0,0,20);
+        var generalTitle=Caption("全体設定");generalTitle.Font=new Font(Font,FontStyle.Bold);generalTitle.Margin=new Padding(0,0,0,4);
+        Add(general,generalTitle);Add(general,enabled);Add(general,startup);Add(content,general);
+        Add(content,Title("Copilot キーの割り当て"));Add(content,action);Add(content,modeHelp);
 
-        var appCard=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=3,Padding=new Padding(14),BackColor=Visuals.Surface,Margin=new Padding(0,12,0,12)};
-        appCard.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,54));appCard.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));appCard.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        var appCard=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=2,Padding=new Padding(12),BackColor=Visuals.Surface,Margin=new Padding(0,10,0,8)};
+        appCard.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,54));appCard.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         appName.Anchor=AnchorStyles.Left;appName.Font=new Font(Font,FontStyle.Bold);appName.MaximumSize=new Size(380,0);
-        appCard.Controls.Add(appIcon,0,0);appCard.Controls.Add(appName,1,0);appCard.Controls.Add(chooseApp,2,0);
+        appCard.Controls.Add(appIcon,0,0);appCard.Controls.Add(appName,1,0);
         Add(appPanel,appCard);
-        var appActions=Row();appActions.Controls.Add(Button("ファイルから選ぶ…",(_,_)=>BrowseExe(),180));appActions.Controls.Add(tryApp);Add(appPanel,appActions);
+        var appActions=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=3,Margin=new Padding(0,0,0,8),Name="AppActions"};
+        appActions.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));appActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));appActions.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        var selection=Row();selection.Name="AppSelectionMethods";selection.WrapContents=false;selection.Controls.Add(chooseApp);selection.Controls.Add(Button("ファイルから選ぶ…",(_,_)=>BrowseExe(),190));
+        appActions.Controls.Add(selection,0,0);tryApp.Anchor=AnchorStyles.Right|AnchorStyles.Top;appActions.Controls.Add(tryApp,2,0);Add(appPanel,appActions);
         Add(appPanel,existing);
-        var expand=Button("詳細設定  ▸",(_,_)=>{},150);
-        expand.Click+=(_,_)=>{details.Visible=!details.Visible;expand.Text=details.Visible?"詳細設定  ▾":"詳細設定  ▸";};
-        Add(appPanel,expand);
         Add(details,Caption("アプリID / 実行ファイル"));Add(details,Visuals.Field(id));
         var advancedActions=Row();advancedActions.Controls.Add(Button("IDを指定…",(_,_)=>EnterId(),125));
         advancedActions.Controls.Add(Button("コピー",(_,_)=>{if(id.Text.Length>0)Clipboard.SetText(id.Text);},100));Add(details,advancedActions);
         Add(details,Caption("起動引数（任意）"));Add(details,Visuals.Field(arguments));
         Add(details,Caption("作業フォルダー（任意）"));Add(details,Visuals.Field(directory));
-        Add(appPanel,details);details.Visible=false;
+        Add(appPanel,new AccordionSection("詳細設定",details){Name="AdvancedSettings"});
         Add(content,appPanel);
 
-        Add(keyPanel,Caption("送信するキー"));Add(keyPanel,chooseKey);
-        var modifiers=Row();modifiers.Controls.AddRange([ctrl,shift,alt,win]);Add(keyPanel,modifiers);
-        combination.Font=new Font("Segoe UI",15,FontStyle.Bold);combination.ForeColor=Visuals.Accent;Add(keyPanel,combination);
-        var testExpand=Button("入力欄で試す  ▸",(_,_)=>{},180);Add(keyPanel,testExpand);
-        var testPanel=Grid();testPanel.Visible=false;
+        var chord=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=3,RowCount=2,Margin=new Padding(0,8,0,8),Name="ChordEditor"};
+        chord.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));chord.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,36));chord.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        chord.RowStyles.Add(new RowStyle(SizeType.AutoSize));chord.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        chord.Controls.Add(Caption("修飾キー（任意）"),0,0);chord.Controls.Add(Caption("メインキー"),2,0);
+        var modifiers=Row();modifiers.Name="ModifierSwitches";modifiers.WrapContents=false;modifiers.Margin=Padding.Empty;modifiers.Controls.AddRange([ctrl,shift,alt,win]);
+        chord.Controls.Add(modifiers,0,1);
+        chord.Controls.Add(new Label{Text="＋",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleCenter,ForeColor=Visuals.Muted},1,1);
+        chooseKey.Width=210;chooseKey.Dock=DockStyle.Fill;chooseKey.Margin=new Padding(0,0,0,0);chord.Controls.Add(chooseKey,2,1);Add(keyPanel,chord);
+        var summary=Grid();summary.Name="KeySummary";summary.BackColor=Visuals.Surface;summary.Padding=new Padding(14,10,14,12);summary.Margin=new Padding(0,8,0,4);summary.MinimumSize=new Size(0,82);
+        var summaryTitle=Caption("送信する操作");summaryTitle.Margin=new Padding(0,0,0,6);Add(summary,summaryTitle);
+        combination.Font=new Font("Yu Gothic UI",14,FontStyle.Bold);combination.ForeColor=Visuals.Accent;combination.Margin=new Padding(0,0,0,6);Add(summary,combination);Add(keyPanel,summary);
+        var testPanel=Grid();
         Add(testPanel,Caption("保存後、この欄で動作を試せます。"));
         var testInput=new TextBox{Text="abc",Multiline=true,AcceptsReturn=true,AccessibleName="キー入力の確認欄"};
         Add(testPanel,Visuals.Field(testInput,70));
         Add(testPanel,Button("リセット",(_,_)=>{testInput.Text="abc";testInput.Select(0,0);testInput.Focus();},110));
-        Add(keyPanel,testPanel);testExpand.Click+=(_,_)=>{testPanel.Visible=!testPanel.Visible;testExpand.Text=testPanel.Visible?"入力欄を閉じる  ▾":"入力欄で試す  ▸";};
+        Add(keyPanel,new AccordionSection("入力欄で試す",testPanel){Name="KeyTest"});
         Add(content,keyPanel);
-        Add(content,new Panel{Dock=DockStyle.Fill,Height=1,BackColor=Visuals.Border,Margin=new Padding(0,20,0,12)});
-        Add(content,startup);
-        content.RowCount++;content.RowStyles.Add(new RowStyle(SizeType.Percent,100));
 
         chooseApp.Click+=(_,_)=>{using var picker=new AppPicker();if(picker.ShowDialog(this)==DialogResult.OK)SetTarget(picker.Selected!);};
         chooseKey.Click+=(_,_)=>{using var picker=new KeyPicker(keyCode);if(picker.ShowDialog(this)==DialogResult.OK){keyCode=picker.SelectedCode;RefreshDraft();}};
@@ -118,8 +129,8 @@ internal sealed class SettingsForm:Form
         modeHelp.ForeColor=Visuals.Muted;
         chooseKey.Text=KeyNames.Name(keyCode)+"  ▾";
         chooseKey.AccessibleName="送信するキー："+KeyNames.Name(keyCode);
-        combination.Text="Copilot  →  "+KeyNames.Binding(Read().Binding!);combination.ForeColor=Visuals.Accent;
-        tryApp.Enabled=target!=null;chooseApp.Text=target==null?"アプリを選択":"変更…";
+        combination.Text=KeyNames.Binding(Read().Binding!);combination.ForeColor=Visuals.Accent;
+        tryApp.Enabled=target!=null;chooseApp.Text="一覧から選ぶ…";
         apply.Enabled=Dirty;
         ShowFeedback(Dirty?"未保存の変更があります。保存すると適用されます。":"変更はありません。",false);
     }
@@ -167,7 +178,7 @@ internal sealed class SettingsForm:Form
         }
     }
     internal static UiButton Button(string text,EventHandler handler,int width=140){var b=new UiButton{Text=text,Width=width};b.Click+=handler;return b;}
-    static UiCheck Chip(string text)=>new(){Text=text,Chip=true,Width=90,Height=38,Margin=new Padding(0,6,8,8)};
+    static UiCheck Chip(string text)=>new(){Text=text,Chip=true,Width=104,Height=42,Margin=new Padding(0,0,8,0)};
     internal static TableLayoutPanel Grid()=>new(){ColumnCount=1,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Dock=DockStyle.Top};
     internal static FlowLayoutPanel Row()=>new(){AutoSize=true,Dock=DockStyle.Fill,WrapContents=true,Margin=new Padding(0,4,0,8)};
     internal static void Add(TableLayoutPanel p,Control c){p.RowStyles.Add(new RowStyle(SizeType.AutoSize));p.Controls.Add(c,0,p.RowCount++);}

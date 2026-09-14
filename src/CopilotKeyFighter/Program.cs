@@ -15,9 +15,20 @@ internal static class Program
             }
             if (args.Length >= 2 && args[0] == "--render-settings")
             {
-                Settings sample = args.Contains("keyboard") ? new(Enabled:args.Contains("enabled"), Action:ActionKind.Keyboard, Binding:new()) : args.Contains("selected") ? new(Enabled:true, Target:new(TargetKind.Executable,"メモ帳",Path.Combine(Environment.SystemDirectory,"notepad.exe"))) : args.Contains("blocked") ? new(Enabled:true,Action:ActionKind.Disabled) : new();
+                Settings sample = args.Contains("keyboard") ? new(Enabled:args.Contains("enabled"), Action:ActionKind.Keyboard, Binding:args.Contains("left")?new(37,Control:true,Shift:true):new()) : args.Contains("selected") ? new(Enabled:true, Target:new(TargetKind.Executable,"メモ帳",Path.Combine(Environment.SystemDirectory,"notepad.exe"))) : args.Contains("blocked") ? new(Enabled:true,Action:ActionKind.Disabled) : new();
                 using var form = new SettingsForm(sample, _ => { });
                 form.Show(); Application.DoEvents();
+                if(args.Contains("expanded"))
+                {
+                    static IEnumerable<Control> Walk(Control c)=>c.Controls.Cast<Control>().SelectMany(x=>new[]{x}.Concat(Walk(x)));
+                    foreach(var section in Walk(form).OfType<AccordionSection>())section.Expanded=true;
+                    Application.DoEvents();
+                    if(args.Contains("bottom"))
+                    {
+                        var viewport=Walk(form).OfType<Panel>().Single(p=>p.Name=="SettingsViewport");
+                        viewport.AutoScrollPosition=new System.Drawing.Point(0,10000);Application.DoEvents();
+                    }
+                }
                 using var bitmap = new System.Drawing.Bitmap(form.Width, form.Height);
                 form.DrawToBitmap(bitmap, form.ClientRectangle with { Width = form.Width, Height = form.Height });
                 bitmap.Save(args[1]); form.Close(); return 0;

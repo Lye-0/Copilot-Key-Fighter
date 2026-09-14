@@ -72,3 +72,8 @@ The UI was restructured around applied status, draft selection and explicit save
 
 User screenshots showed black checkbox backgrounds and unpainted button corners across all three modes. A regression test drawing OnPaint directly onto a black bitmap reproduced the defect against ce606ee; the corrected implementation fills the complete client surface and passes the same test. Cases cover two parent background colors, checked/unchecked and enabled/disabled states, and two widths. This corrects the earlier reliance on complete DrawToBitmap previews.
 
+
+### 2026-09-15 relationship-led UI revision
+
+The three modes were reviewed after grouping global settings separately. App-selection methods share a row; test launch is separated at its right. Modifier switches and the main key share a row with a plus sign; the output summary has an explicit label and no transformation arrow. Flat accordion headers reserve a separate chevron area. Expanded key-test and advanced-app content were rendered at the bottom scroll position to verify access. UI tests cover grouping, same-row chord layout, expansion height, non-overlap, scrollbar availability and Save visibility. Paint coverage now includes global toggles and disclosure headers.
+

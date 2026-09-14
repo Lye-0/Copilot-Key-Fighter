@@ -47,3 +47,6 @@ The native DeletePipelineTests instantiate an isolated settings store and opt in
 
 Owner-drawn controls explicitly fill their entire client area with the opaque parent surface at the start of OnPaint. They use Opaque and ResizeRedraw and do not rely on the background-erase pass of ButtonBase or DrawToBitmap. This covers checkbox labels and the area outside rounded button corners during partial repainting.
 
+
+The relationship-led UI revision is specified in [ui-hierarchy.md](ui-hierarchy.md): global settings precede assignment settings; exclusive actions share a segmented track; application-selection methods are adjacent; modifier toggles and the main key compose one chord; and a flat accordion header shares a container with its body. A separate scrolling Panel hosts the auto-sized content, so expanded fields remain reachable while Save stays fixed.
+
