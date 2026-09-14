@@ -22,6 +22,14 @@
 - files: `src/CopilotKeyFighter/KeyboardHook.cs`, `src/CopilotKeyFighter/Resident.cs`, `src/CopilotKeyFighter/PendingGesture.cs` …
 - memory: `agent-knowledge/entries/2026-09-14-pending-key-release-4ce129.md`
 
+### 対象キーの非同期状態だけで送信を待つと Delete が送れなくなる
+- id: `rm-20260915-target-state-gate`
+- type: `failure`
+- maturity: `candidate`
+- tags: `delete`, `asynchronous-state`, `native-test`
+- files: `src/CopilotKeyFighter/ReleaseGate.cs`, `src/CopilotKeyFighter/Resident.cs`, `tests/CopilotKeyFighter.Tests/DeletePipelineTests.cs` …
+- memory: `agent-knowledge/entries/2026-09-15-target-state-gate-57f3a1.md`
+
 ## Search guidance
 
 Use topic, tags, related paths, filenames, and text search such as `rg` to shortlist entries.
