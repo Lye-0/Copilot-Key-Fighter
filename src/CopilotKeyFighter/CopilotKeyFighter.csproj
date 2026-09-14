@@ -17,6 +17,7 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../assets/App.ico" LogicalName="CopilotKeyFighter.App.ico" />
+    <EmbeddedResource Include="../../assets/key.png" LogicalName="CopilotKeyFighter.Key.png" />
     <InternalsVisibleTo Include="CopilotKeyFighter.Tests" />
   </ItemGroup>
 </Project>

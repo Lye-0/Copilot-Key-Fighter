@@ -13,9 +13,9 @@ internal static class Program
             {
                 File.WriteAllText(args[1], JsonSerializer.Serialize(AppCatalog.LoadAsync().GetAwaiter().GetResult(), SettingsStore.Options)); return 0;
             }
-            if (args.Length == 2 && args[0] == "--render-settings")
+            if (args.Length >= 2 && args[0] == "--render-settings")
             {
-                using var form = new SettingsForm(new(), _ => { });
+                using var form = new SettingsForm(args.Contains("keyboard") ? new(Action: ActionKind.Keyboard, Binding: new()) : new(), _ => { });
                 form.Show(); Application.DoEvents();
                 using var bitmap = new System.Drawing.Bitmap(form.Width, form.Height);
                 form.DrawToBitmap(bitmap, form.ClientRectangle with { Width = form.Width, Height = form.Height });

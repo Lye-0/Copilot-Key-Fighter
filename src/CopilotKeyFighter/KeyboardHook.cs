@@ -14,6 +14,8 @@ internal sealed class KeyboardHook : IDisposable
     int disposed;
     internal volatile bool Enabled;
     int interference;
+    readonly int[] physical = new int[256];
+    internal bool PhysicallyDown(int key) => key >= 0 && key < physical.Length && Volatile.Read(ref physical[key]) != 0;
     internal int Interference => Volatile.Read(ref interference);
     internal KeyboardHook(nint destination)
     {
@@ -30,6 +32,7 @@ internal sealed class KeyboardHook : IDisposable
         try
         {
             threadId = Native.GetCurrentThreadId();
+            for (int key = 0; key < physical.Length; key++) physical[key] = Native.Down(key) ? 1 : 0;
             Native.PeekMessage(out _, 0, 0, 0, 0);
             hook = Native.SetWindowsHookEx(13, callback, Native.GetModuleHandle(null), 0);
             if (hook == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -49,6 +52,7 @@ internal sealed class KeyboardHook : IDisposable
             if ((flags & 0x10) == 0)
             {
                 bool down = message is 0x100 or 0x104;
+                if (key < physical.Length) Volatile.Write(ref physical[key], down ? 1 : 0);
                 if (down && key != 0x86) Interlocked.Increment(ref interference);
                 if (key == 0x86)
                 {

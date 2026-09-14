@@ -4,7 +4,7 @@ internal sealed class SettingsForm : Form
 {
     readonly Action<Settings> save;
     readonly CheckBox enabled = new() { Text = "Copilot キーの割り当てを有効にする", AutoSize = true };
-    readonly ComboBox action = new() { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill };
+    readonly ModeSelector action = new();
     readonly TextBox targetName = new() { ReadOnly = true, Dock = DockStyle.Fill };
     readonly TextBox id = new() { Dock = DockStyle.Fill, ReadOnly = true };
     readonly TextBox arguments = new() { Dock = DockStyle.Fill };
@@ -26,17 +26,20 @@ internal sealed class SettingsForm : Form
         ownedIcon = Program.LoadIcon(); Icon = ownedIcon;
         AutoScaleMode = AutoScaleMode.Dpi;
         Font = new Font("Yu Gothic UI", 10);
-        ClientSize = new Size(690, 680); MinimumSize = new Size(640, 580);
+        ClientSize = new Size(1030, 760); MinimumSize = new Size(760, 620);
         StartPosition = FormStartPosition.CenterScreen;
-        var root = Grid(); root.Dock = DockStyle.Fill; root.AutoScroll = true; root.Padding = new Padding(24);
-        Controls.Add(root);
-        Add(root, new Label { Text = "Copilot キーの動作", Font = new Font(Font.FontFamily, 19, FontStyle.Bold), AutoSize = true });
-        Add(root, new Label { Text = "アプリを呼び出す、キーを送る、標準動作を止める。", AutoSize = true, Margin = new Padding(0, 4, 0, 18) });
+        var brand = new BrandPanel();
+        var content = new Panel { Dock = DockStyle.Fill };
+        Controls.Add(content); Controls.Add(brand);
+        Resize += (_, _) => brand.Visible = ClientSize.Width >= 960 * DeviceDpi / 96;
+        var root = Grid(); root.Dock = DockStyle.Fill; root.AutoScroll = true; root.Padding = new Padding(30,24,30,16);
+        content.Controls.Add(root);
+        Add(root, new Label { Text = "ひと押しの先を、選ぶ。", Font = new Font(Font.FontFamily, 22, FontStyle.Bold), AutoSize = true });
+        Add(root, new Label { Text = "Copilot キーに、お好みの動作を割り当てます。", AutoSize = true, Margin = new Padding(0, 4, 0, 18) });
         Add(root, enabled);
-        action.Items.AddRange(["アプリを開く", "キー・ショートカットを送る", "何もしない（標準動作を抑止）"]);
-        Add(root, Label("割り当てる動作")); Add(root, action);
+        Add(root, Label("01   動作を選ぶ")); Add(root, action);
 
-        Add(appPanel, Label("起動するアプリ")); Add(appPanel, targetName);
+        Add(appPanel, Label("02   起動するアプリ")); Add(appPanel, targetName);
         var choose = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, WrapContents = true };
         choose.Controls.Add(Button("アプリ一覧から選ぶ…", async (_, _) =>
         {
@@ -59,8 +62,13 @@ internal sealed class SettingsForm : Form
         }));
         Add(appPanel, choose);
         Add(appPanel, Label("取得した ID / 実行ファイル")); Add(appPanel, id);
-        Add(appPanel, Label("起動引数（省略可）")); Add(appPanel, arguments);
-        Add(appPanel, Label("作業フォルダー（実行ファイルのみ・省略可）")); Add(appPanel, directory);
+        var details = Grid(); details.Visible = false;
+        var showDetails = new CheckBox { Text = "詳細設定（起動引数・作業フォルダー）", AutoSize = true };
+        showDetails.CheckedChanged += (_, _) => details.Visible = showDetails.Checked;
+        Add(appPanel, showDetails);
+        Add(details, Label("起動引数（省略可）")); Add(details, arguments);
+        Add(details, Label("作業フォルダー（実行ファイルのみ・省略可）")); Add(details, directory);
+        Add(appPanel, details);
         Add(appPanel, existing);
         Add(appPanel, Button("このアプリを開いて確認", async (sender, _) =>
         {
@@ -71,7 +79,7 @@ internal sealed class SettingsForm : Form
         }));
         Add(root, appPanel);
 
-        Add(keyPanel, Label("送信するキー"));
+        Add(keyPanel, Label("02   送信するキー"));
         var keys = Enum.GetValues<Keys>().Select(k => (int)k).Distinct().Where(k => k >= 8 && k <= 0xFE && !KeyBinding.IsModifier(k) && k is not (0x86 or 0xFC or 0xE7)).ToArray();
         foreach (var code in keys) key.Items.Add(new KeyItem(code));
         Add(keyPanel, key);
@@ -82,13 +90,13 @@ internal sealed class SettingsForm : Form
         Add(root, keyPanel);
         Add(root, startup);
         Add(root, feedback);
-        var footer = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, Margin = new Padding(0, 15, 0, 0) };
+        var footer = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Bottom, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(16, 8, 16, 12) };
         var apply = Button("保存して適用", (_, _) =>
         {
             try { save(Read()); dirty = false; feedback.ForeColor = Color.DarkGreen; feedback.Text = "保存しました。トレイに常駐します。この画面は閉じて構いません。"; }
             catch (Exception e) { feedback.ForeColor = Color.Firebrick; feedback.Text = e.Message; }
         });
-        footer.Controls.Add(apply); footer.Controls.Add(Button("閉じる", (_, _) => Close())); Add(root, footer);
+        footer.Controls.Add(apply); footer.Controls.Add(Button("閉じる", (_, _) => Close())); content.Controls.Add(footer);
         AcceptButton = apply;
         enabled.Checked = settings.Enabled; action.SelectedIndex = (int)settings.Action; existing.Checked = settings.PreferExisting; startup.Checked = settings.StartWithWindows;
         var binding = settings.Binding ?? new();
@@ -100,6 +108,7 @@ internal sealed class SettingsForm : Form
         foreach (var field in new[] { arguments, directory }) field.TextChanged += (_, _) => dirty = true;
         key.SelectedIndexChanged += (_, _) => dirty = true;
         UpdatePanels(); dirty = false;
+        Visuals.Apply(this); Visuals.Primary(apply); action.RefreshColors();
         FormClosing += (_, e) => { if (dirty && MessageBox.Show(this, "保存していない変更を破棄して閉じますか？", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) e.Cancel = true; };
     }
     Settings Read() => new(Enabled: enabled.Checked, Action: (ActionKind)action.SelectedIndex,
@@ -126,12 +135,24 @@ internal sealed class AppPicker : Form
     readonly Label state = new() { Dock = DockStyle.Bottom, Height = 42, Text = "アプリ一覧を読み込んでいます…" };
     readonly Button select = new() { Text = "このアプリを選ぶ", Dock = DockStyle.Bottom, Height = 40, Enabled = false };
     List<AppTarget> apps = [];
+    readonly Dictionary<string, Icon> icons = new();
     internal AppTarget? Selected => list.SelectedItem as AppTarget;
     internal AppPicker()
     {
         Text = "起動するアプリを選ぶ"; ClientSize = new Size(570, 520); Padding = new Padding(16);
         Font = new System.Drawing.Font("Yu Gothic UI", 10); StartPosition = FormStartPosition.CenterParent;
         Controls.AddRange([list, state, select, search]);
+        Visuals.Apply(this); Visuals.Primary(select);
+        list.DrawMode = DrawMode.OwnerDrawFixed; list.ItemHeight = 36;
+        list.DrawItem += (_, e) =>
+        {
+            if (e.Index < 0 || list.Items[e.Index] is not AppTarget app) return;
+            e.DrawBackground();
+            if (!icons.TryGetValue(app.Id, out var icon)) icons[app.Id] = icon = TargetIcon.Load(app);
+            e.Graphics.DrawIcon(icon, new Rectangle(e.Bounds.Left + 6, e.Bounds.Top + 6, 24, 24));
+            TextRenderer.DrawText(e.Graphics, app.Name, e.Font, new Rectangle(e.Bounds.Left + 40, e.Bounds.Top, e.Bounds.Width - 44, e.Bounds.Height), e.ForeColor, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+            e.DrawFocusRectangle();
+        };
         search.TextChanged += (_, _) => Filter();
         list.SelectedIndexChanged += (_, _) => { select.Enabled = Selected != null; state.Text = Selected == null ? "アプリを選択してください。" : Selected.Kind == TargetKind.Executable ? "実行ファイルから起動します。" : "選択するとアプリの ID を自動で設定します。"; };
         select.Click += (_, _) => { if (Selected != null) { DialogResult = DialogResult.OK; Close(); } };
@@ -143,4 +164,9 @@ internal sealed class AppPicker : Form
         };
     }
     void Filter() { list.DataSource = apps.Where(x => x.Name.Contains(search.Text, StringComparison.CurrentCultureIgnoreCase)).ToList(); }
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing) { foreach (var icon in icons.Values) icon.Dispose(); icons.Clear(); }
+    }
 }

@@ -51,7 +51,7 @@ internal sealed class Resident : ApplicationContext
         keyboard.Enabled = false;
         bool active = settings.Enabled && !paused;
         if (active && Startup.LegacyRunning()) throw new InvalidOperationException("旧 ChatGPTLauncher が起動中です。旧版のトレイから Exit を選び、自動起動を解除してから有効にしてください。");
-        if (active && settings.Action == ActionKind.Application) foreground ??= new(receiver.Handle);
+        if (active) foreground ??= new(receiver.Handle);
         else { foreground?.Dispose(); foreground = null; }
         keyboard.Enabled = active;
         pause.Text = paused ? "再開" : "一時停止";
@@ -97,10 +97,12 @@ internal sealed class Resident : ApplicationContext
     async void Copilot(int serial, nint originalWindow)
     {
         if (!keyboard.Enabled) return;
+        // A consumed non-character chord also prevents a bare Win release from opening Start.
+        // Use the same registered internal pair for all actions; never synthesize modifier keys here.
+        try { foreground?.Request(); } catch (Exception e) { Notify(e); return; }
         if (settings.Action == ActionKind.Application)
         {
             if (opening) return;
-            try { foreground?.Request(); } catch (Exception e) { Notify(e); }
             return;
         }
         if (settings.Action != ActionKind.Keyboard || sending) return;
@@ -115,9 +117,10 @@ internal sealed class Resident : ApplicationContext
             while (Environment.TickCount64 < deadline)
             {
                 await Task.Delay(10, token);
-                if (version != generation || !keyboard.Enabled || serial != keyboard.Interference || Native.GetForegroundWindow() != originalWindow) return;
-                if (KeySender.AnyKeyDown()) continue;
-                KeySender.Send(binding); return;
+                var decision = PendingGesture.Evaluate(Environment.TickCount64, deadline, version == generation, keyboard.Enabled, serial == keyboard.Interference, Native.GetForegroundWindow() == originalWindow, KeySender.AnyKeyDown());
+                if (decision == PendingDecision.Cancel) return;
+                if (decision == PendingDecision.Wait) continue;
+                KeySender.Send(binding, keyboard.PhysicallyDown); return;
             }
         }
         catch (OperationCanceledException) { }
@@ -152,7 +155,8 @@ internal sealed class Resident : ApplicationContext
             if (m.Msg == SettingsMessage) owner.ShowSettings();
             else if (m.Msg == ExitMessage) owner.ExitThread();
             else if (m.Msg == CopilotMessage) owner.Copilot((int)m.WParam, m.LParam);
-            else if (m.Msg == 0x312 && owner.foreground?.Accept(m.WParam) == true) owner.Open();
+            else if (m.Msg == 0x312 && owner.foreground?.Accept(m.WParam) == true)
+            { if (owner.keyboard.Enabled && owner.settings.Action == ActionKind.Application) owner.Open(); }
             else base.WndProc(ref m);
         }
     }

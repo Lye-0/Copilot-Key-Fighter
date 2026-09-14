@@ -3,6 +3,15 @@ using Xunit;
 public class SafetyTests
 {
     [Fact]
+    public void PendingGestureNeverSendsAfterInterferenceOrExpiry()
+    {
+        Assert.Equal(PendingDecision.Wait, PendingGesture.Evaluate(1, 100, true, true, true, true, true));
+        Assert.Equal(PendingDecision.Send, PendingGesture.Evaluate(1, 100, true, true, true, true, false));
+        for (int bits = 0; bits < 15; bits++)
+            Assert.Equal(PendingDecision.Cancel, PendingGesture.Evaluate(1, 100, (bits & 1) != 0, (bits & 2) != 0, (bits & 4) != 0, (bits & 8) != 0, false));
+        Assert.Equal(PendingDecision.Cancel, PendingGesture.Evaluate(100, 100, true, true, true, true, false));
+    }
+    [Fact]
     public void EveryShortcutIsBalancedAndEveryPartialSendHasRecovery()
     {
         for (int mods = 0; mods < 16; mods++)
