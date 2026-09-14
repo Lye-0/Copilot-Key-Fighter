@@ -106,7 +106,7 @@ internal sealed class UiCheck:CheckBox
     internal UiCheck(){AutoSize=false;Height=34;Width=600;Cursor=Cursors.Hand;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.Opaque|ControlStyles.ResizeRedraw,true);}
     public override Size GetPreferredSize(Size proposedSize)
     {
-        if(Switch||Chip)return new Size(TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPadding).Width+(Chip?30+22:42+36),Math.Max(42,Font.Height+16));
+        if(Switch||Chip)return new Size(TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPadding).Width+(Chip?30+34:42+36),Math.Max(42,Font.Height+16));
         return base.GetPreferredSize(proposedSize);
     }
     protected override void OnPaintBackground(PaintEventArgs e)=>Visuals.PaintCanvas(this,e.Graphics);
@@ -121,7 +121,7 @@ internal sealed class UiCheck:CheckBox
         if(Chip || Switch)
         {
             int trackWidth=Chip?30:42,trackHeight=Chip?16:22;
-            int padding=Chip?8:12,gap=Chip?6:12;
+            int padding=Chip?8:12,gap=Chip?18:12;
             int textWidth=TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPadding).Width;
             int trackX=Math.Min(Width-trackWidth-padding,padding+textWidth+gap);
             Visuals.Box(e.Graphics,new Rectangle(1,1,Width-3,Height-3),Checked&&!SystemInformation.HighContrast?Color.FromArgb(239,248,249):Visuals.Surface,Focused?Visuals.Accent:Visuals.Border);

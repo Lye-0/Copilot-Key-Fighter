@@ -178,7 +178,7 @@ internal sealed class SettingsForm:Form
         }
     }
     internal static UiButton Button(string text,EventHandler handler,int width=140){var b=new UiButton{Text=text,Width=width};b.Click+=handler;return b;}
-    static UiCheck Chip(string text)=>new(){Text=text,Chip=true,Width=112,Height=42,Margin=new Padding(0,0,6,0)};
+    static UiCheck Chip(string text)=>new(){Text=text,Chip=true,Width=104,Height=42,Margin=new Padding(0,0,6,0)};
     internal static TableLayoutPanel Grid()=>new(){ColumnCount=1,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Dock=DockStyle.Top};
     internal static FlowLayoutPanel Row()=>new(){AutoSize=true,Dock=DockStyle.Fill,WrapContents=true,Margin=new Padding(0,4,0,8)};
     internal static void Add(TableLayoutPanel p,Control c){p.RowStyles.Add(new RowStyle(SizeType.AutoSize));p.Controls.Add(c,0,p.RowCount++);}
