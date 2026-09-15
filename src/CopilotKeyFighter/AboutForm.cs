@@ -57,11 +57,11 @@ internal sealed class AboutPathDisplay:Panel
         Controls.Add(text);Controls.Add(copy);
         void Arrange()
         {
-            int width=Math.Max(100,ClientSize.Width-Padding.Horizontal-96);
+            int width=Math.Max(100,ClientSize.Width-Padding.Horizontal);
             int height=TextRenderer.MeasureText(value,Font,new Size(width,int.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.TextBoxControl|TextFormatFlags.NoPrefix).Height+8;
             text.Bounds=new Rectangle(12,16,width,height);
-            copy.Location=new Point(Math.Max(12,ClientSize.Width-92),12);
-            Height=Math.Max(height+28,copy.Height+24);
+            copy.Location=new Point(Math.Max(12,ClientSize.Width-92),text.Bottom+8);
+            Height=copy.Bottom+12;
         }
         SizeChanged+=(_,_)=>Arrange();FontChanged+=(_,_)=>Arrange();Arrange();
     }

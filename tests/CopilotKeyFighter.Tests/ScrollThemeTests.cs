@@ -68,6 +68,10 @@ public class ScrollThemeTests
                 Application.DoEvents();
                 var display=Walk(about).OfType<AboutPathDisplay>().First();
                 var path=display.Controls.OfType<Label>().Single();Assert.False(path.TabStop);
+                var copy=display.Controls.OfType<Button>().Single();
+                Assert.True(copy.Top>=path.Bottom);
+                Assert.True(display.ClientRectangle.Contains(copy.Bounds));
+                Assert.Equal(display.ClientSize.Width-12,copy.Right);
                 panel.AutoScrollPosition=Point.Empty;Application.DoEvents();
                 var wheel=new HandledMouseEventArgs(MouseButtons.None,0,10,10,-120);
                 path.GetType().GetMethod("OnMouseWheel",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(path,new object[]{wheel});
