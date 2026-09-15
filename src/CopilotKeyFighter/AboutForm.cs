@@ -25,6 +25,9 @@ internal sealed class AboutForm:Form
         var install=SettingsForm.Grid();install.Padding=new Padding(0,4,0,8);
         Instructions(install,"1. 配布ZIPを、使い続けるフォルダーにすべて展開します。\n2. CopilotKeyFighter.exeを起動し、動作と対象を選びます。\n3. 「割り当てを有効にする」をオンにして「保存」を押します。\n4. 必要なら「ログイン時に自動起動」をオンにして保存します。\n\n登録はアプリが行います。レジストリを手動で編集する必要はありません。");
         Add(new AccordionSection("導入・自動起動の手順",install));
+        var move=SettingsForm.Grid();move.Padding=new Padding(0,4,0,8);
+        Instructions(move,"同じPC・同じユーザー内で本体の場所を変更する場合：\n\n1. 通知領域のメニューから「終了」を選びます。\n2. 本体を展開したフォルダーを移動します。\n3. 移動先のCopilotKeyFighter.exeを一度起動します。\n\n設定はそのまま引き継がれます。自動起動がオンなら、起動時に登録先を新しい本体の場所へ更新します。\n\n移動しただけでは自動起動登録は更新されません。移動先で一度起動してください。Aboutの「現在の本体」と「現在の自動起動登録」で確認できます。");
+        Add(new AccordionSection("本体を移動する手順",move));
         var removal=SettingsForm.Grid();removal.Padding=new Padding(0,4,0,8);
         Instructions(removal,"1. 設定画面で「ログイン時に自動起動」をオフにして保存します。\n2. 通知領域のメニューから「終了」を選びます。\n3. 本体を展開したフォルダーを削除します。\n4. 設定・診断情報も不要なら、次のフォルダーを削除します。");
         var folder=PathField(Program.StateDirectory);SettingsForm.Add(removal,folder);
