@@ -49,7 +49,7 @@ internal sealed class SettingsForm:Form
         footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,244));
         var buttons=Row();buttons.WrapContents=false;buttons.AutoSize=true;buttons.Controls.Add(Button("閉じる",(_,_)=>Close(),100));buttons.Controls.Add(apply);
         footer.Controls.Add(feedback,0,0);footer.Controls.Add(buttons,1,0);
-        Controls.Add(viewport);Controls.Add(footer);Controls.Add(header);
+        Controls.Add(new ThemedScrollHost(viewport));Controls.Add(footer);Controls.Add(header);
         var general=Grid();general.Name="GlobalSettings";general.Padding=new Padding(16,8,16,12);general.BackColor=Visuals.Surface;general.Margin=new Padding(0,0,0,20);
         var generalTitle=Caption("全体設定");generalTitle.Font=new Font(Font,FontStyle.Bold);generalTitle.Margin=new Padding(0,0,0,4);
         Add(general,generalTitle);Add(general,enabled);Add(general,startup);Add(content,general);

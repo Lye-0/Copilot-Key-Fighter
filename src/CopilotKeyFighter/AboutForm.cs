@@ -12,7 +12,7 @@ internal sealed class AboutForm:Form
         var content=SettingsForm.Grid();content.Padding=new Padding(24);viewport.Controls.Add(content);
         var footer=new Panel{Dock=DockStyle.Bottom,Height=68,Padding=new Padding(20,12,20,12),BackColor=Visuals.Surface};
         var close=SettingsForm.Button("閉じる",(_,_)=>Close(),100);close.Dock=DockStyle.Right;footer.Controls.Add(close);CancelButton=close;
-        Controls.Add(viewport);Controls.Add(footer);
+        Controls.Add(new ThemedScrollHost(viewport));Controls.Add(footer);
         Add(new Label{Text="Copilot Key Fighter",AutoSize=true,Font=new Font(Font.FontFamily,16,FontStyle.Bold),Margin=new Padding(0,0,0,6)});
         Add(SettingsForm.Caption("この環境の保存場所"));
         Location("現在の本体",Environment.ProcessPath??"実行ファイルの場所を取得できませんでした。");

@@ -14,6 +14,7 @@ internal sealed class WheelSteps
 
 internal sealed class SteadyListBox:ListBox
 {
+    internal event EventHandler? ViewChanged;
     readonly WheelSteps wheel=new();
     internal void ApplyWheelDelta(int delta)
     {
@@ -31,5 +32,6 @@ internal sealed class SteadyListBox:ListBox
             m.Result=0;return; // Do not apply native wheel movement a second time.
         }
         base.WndProc(ref m);
+        if(m.Msg is 0xF or 0x115 or 0x100 or 0x101 or 0x197 or 0x5)ViewChanged?.Invoke(this,EventArgs.Empty);
     }
 }

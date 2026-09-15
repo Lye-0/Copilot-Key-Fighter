@@ -16,7 +16,7 @@ internal sealed class KeyPicker:Form
         keys=KeyNames.Codes.Append(selectedCode).Distinct().Select(k=>new KeyItem(k,KeyNames.Name(k))).ToList();
         var field=SearchField(search,"キー名で検索");
         var footer=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=66,FlowDirection=FlowDirection.RightToLeft,Padding=new Padding(0,14,0,0)};footer.Controls.Add(choose);footer.Controls.Add(SettingsForm.Button("キャンセル",(_,_)=>Close(),130));
-        Controls.Add(list);Controls.Add(count);Controls.Add(field);Controls.Add(footer);
+        Controls.Add(new ThemedScrollHost(list));Controls.Add(count);Controls.Add(field);Controls.Add(footer);
         list.DrawItem+=(_,e)=>{if(e.Index<0)return;PickerPaint.Row(e,list.Items[e.Index].ToString()!,null);};
         search.TextChanged+=(_,_)=>Filter();list.SelectedIndexChanged+=(_,_)=>choose.Enabled=list.SelectedItem!=null;
         choose.Click+=(_,_)=>{if(list.SelectedItem is KeyItem item){SelectedCode=item.Code;DialogResult=DialogResult.OK;Close();}};
@@ -47,7 +47,7 @@ internal sealed class AppPicker:Form
         ShowIcon=false;ShowInTaskbar=false;MinimizeBox=false;MaximizeBox=false;search.AccessibleName="アプリ名で検索";
         var field=KeyPicker.SearchField(search,"アプリ名で検索");
         var footer=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=66,FlowDirection=FlowDirection.RightToLeft,Padding=new Padding(0,14,0,0)};footer.Controls.Add(select);footer.Controls.Add(SettingsForm.Button("キャンセル",(_,_)=>Close(),130));
-        Controls.Add(list);Controls.Add(state);Controls.Add(field);Controls.Add(footer);
+        Controls.Add(new ThemedScrollHost(list));Controls.Add(state);Controls.Add(field);Controls.Add(footer);
         list.DrawItem+=(_,e)=>
         {
             if(e.Index<0||list.Items[e.Index] is not AppTarget app)return;
