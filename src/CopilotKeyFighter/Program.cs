@@ -9,6 +9,19 @@ internal static class Program
         try
         {
             ApplicationConfiguration.Initialize();
+            if(args.Length>=2 && args[0]=="--render-about")
+            {
+                using var form=new AboutForm();form.Show();Application.DoEvents();
+                if(args.Contains("expanded"))
+                {
+                    static IEnumerable<Control> Walk(Control c)=>c.Controls.Cast<Control>().SelectMany(x=>new[]{x}.Concat(Walk(x)));
+                    foreach(var section in Walk(form).OfType<AccordionSection>())section.Expanded=true;
+                    Application.DoEvents();
+                    foreach(var panel in form.Controls.OfType<Panel>().Where(p=>p.AutoScroll))panel.AutoScrollPosition=new System.Drawing.Point(0,10000);
+                    Application.DoEvents();
+                }
+                using var bitmap=new System.Drawing.Bitmap(form.Width,form.Height);form.DrawToBitmap(bitmap,new System.Drawing.Rectangle(0,0,form.Width,form.Height));bitmap.Save(args[1]);form.Close();return 0;
+            }
             if (args.Length == 2 && args[0] == "--list-apps")
             {
                 File.WriteAllText(args[1], JsonSerializer.Serialize(AppCatalog.LoadAsync().GetAwaiter().GetResult(), SettingsStore.Options)); return 0;

@@ -34,13 +34,15 @@ internal sealed class SettingsForm:Form
         Text="Copilot Key Fighter — 設定";ownedIcon=Program.LoadIcon();Icon=ownedIcon;
         Font=new Font("Yu Gothic UI",10);BackColor=Visuals.Paper;ForeColor=Visuals.Ink;
         AutoScaleMode=AutoScaleMode.Dpi;ClientSize=new Size(840,820);MinimumSize=new Size(720,640);StartPosition=FormStartPosition.CenterScreen;
-        var header=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=2,RowCount=2,Padding=new Padding(28,14,28,12),BackColor=Visuals.Surface};
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,48));header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        var header=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=3,RowCount=2,Padding=new Padding(28,14,28,12),BackColor=Visuals.Surface};
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,48));header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,100));
         header.RowStyles.Add(new RowStyle(SizeType.AutoSize));header.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         var logo=new PictureBox{Image=ownedIcon.ToBitmap(),SizeMode=PictureBoxSizeMode.CenterImage,Dock=DockStyle.Fill};
         var heading=new Label{Text="Copilot Key Fighter",Font=new Font(Font.FontFamily,16,FontStyle.Bold),AutoSize=true,Margin=new Padding(12,0,0,2)};
         current.Margin=new Padding(12,0,0,0);header.Controls.Add(logo,0,0);header.SetRowSpan(logo,2);header.Controls.Add(heading,1,0);header.Controls.Add(current,1,1);
-        header.SizeChanged+=(_,_)=>current.MaximumSize=new Size(Math.Max(200,header.Width-header.Padding.Horizontal-64),0);
+        var about=Button("About",(_,_)=>{using var dialog=new AboutForm();dialog.ShowDialog(this);},92);about.Name="AboutButton";about.AccessibleName="About：保存場所と導入・削除の手順";about.Anchor=AnchorStyles.Top|AnchorStyles.Right;
+        header.Controls.Add(about,2,0);header.SetRowSpan(about,2);
+        header.SizeChanged+=(_,_)=>current.MaximumSize=new Size(Math.Max(160,header.Width-header.Padding.Horizontal-164),0);
         var viewport=new Panel{Dock=DockStyle.Fill,AutoScroll=true,Name="SettingsViewport"};
         var content=Grid();content.Dock=DockStyle.Top;content.Padding=new Padding(28,20,28,12);viewport.Controls.Add(content);
         var footer=new TableLayoutPanel{Dock=DockStyle.Bottom,Height=76,ColumnCount=2,Padding=new Padding(28,14,28,14),BackColor=Visuals.Surface};
