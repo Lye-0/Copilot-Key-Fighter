@@ -7,6 +7,34 @@ using Xunit;
 public class ScrollThemeTests
 {
     [Fact]
+    public async Task NonScrollingPageFillsViewportOnFirstShowAndResize()
+    {
+        var complete=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread=new Thread(()=>
+        {
+            try
+            {
+                using var form=new SettingsForm(new(Enabled:true,Action:ActionKind.Disabled),_=>{});
+                static IEnumerable<Control> Walk(Control c)=>c.Controls.Cast<Control>().SelectMany(x=>new[]{x}.Concat(Walk(x)));
+                form.Show();Application.DoEvents();
+                foreach(var size in new[]{new Size(940,840),new Size(720,640),new Size(1080,950)})
+                {
+                    form.ClientSize=size;Application.DoEvents();
+                    var viewport=Walk(form).OfType<Panel>().Single(p=>p.Name=="SettingsViewport");
+                    var host=Walk(form).OfType<ThemedScrollHost>().Single();
+                    Assert.True(viewport.ClientSize.Width>=host.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-2);
+                    Assert.True(viewport.ClientSize.Width>600);
+                    var bar=host.Controls.OfType<ScrollThumb>().Single();
+                    Assert.Equal(viewport.VerticalScroll.Visible,bar.Visible);
+                    Assert.False(viewport.HorizontalScroll.Visible);
+                }
+                form.Close();complete.SetResult();
+            }
+            catch(Exception e){complete.SetException(e);}
+        }){IsBackground=true};thread.SetApartmentState(ApartmentState.STA);thread.Start();
+        await complete.Task.WaitAsync(TimeSpan.FromSeconds(15));
+    }
+    [Fact]
     public async Task CustomThumbTracksContentAndMovesListWithoutChangingSelection()
     {
         var complete=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

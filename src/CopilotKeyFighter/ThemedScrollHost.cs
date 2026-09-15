@@ -40,7 +40,10 @@ internal sealed class ThemedScrollHost:Panel
         int width=SystemInformation.VerticalScrollBarWidth;
         clip.Bounds=new Rectangle(0,0,Math.Max(0,ClientSize.Width-width),ClientSize.Height);
         bar.Bounds=new Rectangle(clip.Right,0,width,ClientSize.Height);
-        view.Height=clip.Height;Sync();
+        view.Height=clip.Height;
+        // Width is a layout invariant, including before a handle/scroll range exists.
+        if(!view.IsHandleCreated)view.Width=clip.Width;
+        Sync();
     }
     void Sync()
     {
@@ -49,12 +52,14 @@ internal sealed class ThemedScrollHost:Panel
         try
         {
         var info=new ScrollInfo{Size=(uint)Marshal.SizeOf<ScrollInfo>(),Mask=0x17};
-        if(!GetScrollInfo(view.Handle,1,ref info))return;
-        int maximum=Math.Max(info.Min,info.Max-(int)info.Page+1);
-        bar.Visible=maximum>info.Min;
+        bool available=GetScrollInfo(view.Handle,1,ref info);
+        int maximum=available?Math.Max(info.Min,info.Max-(int)info.Page+1):0;
+        bool scrollable=available&&maximum>info.Min;
+        if(view is ScrollableControl panel)scrollable=panel.VerticalScroll.Visible;
+        bar.Visible=scrollable;
         int position=view is ScrollableControl scrolled?-scrolled.AutoScrollPosition.Y:info.Position;
-        bar.Configure(info.Min,maximum,(int)info.Page,position);
-        view.Width=clip.Width+(bar.Visible?SystemInformation.VerticalScrollBarWidth:0);
+        bar.Configure(available?info.Min:0,maximum,(int)info.Page,position);
+        view.Width=clip.Width+(scrollable?SystemInformation.VerticalScrollBarWidth:0);
         }
         finally{syncing=false;}
     }
