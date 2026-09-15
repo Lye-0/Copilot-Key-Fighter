@@ -9,6 +9,10 @@ dotnet publish (Join-Path $repoRoot 'src/CopilotKeyFighter/CopilotKeyFighter.csp
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed' }
 foreach ($file in @('README.md','LICENSE','NOTICE.md')) { Copy-Item -LiteralPath (Join-Path $repoRoot $file) -Destination $package }
 if (Test-Path (Join-Path $repoRoot 'docs/verification.md')) { Copy-Item -LiteralPath (Join-Path $repoRoot 'docs/verification.md') -Destination (Join-Path $package 'VERIFICATION.md') }
+$docs = Join-Path $package 'docs'
+New-Item -ItemType Directory -Path $docs -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs/verification.md') -Destination $docs
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs/images') -Destination $docs -Recurse
 $nugetRoot = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path ([Environment]::GetFolderPath('UserProfile')) '.nuget/packages' }
 $assets = Get-Content (Join-Path $repoRoot 'src/CopilotKeyFighter/obj/project.assets.json') -Raw | ConvertFrom-Json
 $runtimeLibraries = @($assets.project.frameworks.PSObject.Properties.Value.downloadDependencies | Where-Object { $_.name -match '^Microsoft\.(NETCore|WindowsDesktop)\.App\.Runtime\.win-x64$' } | Sort-Object name -Unique)
