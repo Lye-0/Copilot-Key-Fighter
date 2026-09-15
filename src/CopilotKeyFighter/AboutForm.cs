@@ -36,21 +36,48 @@ internal sealed class AboutForm:Form
         void Location(string title,string value){Add(SettingsForm.Caption(title));var field=PathField(value);field.AccessibleName=title;Add(field);}
     }
     static Control PathField(string value)
-    {
-        var text=new TextBox{Text=value,ReadOnly=true,Multiline=true,WordWrap=true,BackColor=Visuals.Surface,AccessibleName="場所"};
-        var field=Visuals.Field(text,60);field.Margin=new Padding(0,0,0,4);
-        field.SizeChanged+=(_,_)=>
-        {
-            int width=Math.Max(120,field.ClientSize.Width-field.Padding.Horizontal-8);
-            int height=TextRenderer.MeasureText(value,text.Font,new Size(width,int.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.TextBoxControl|TextFormatFlags.NoPrefix).Height;
-            field.Height=Math.Max(44,height+field.Padding.Vertical+12);
-        };
-        return field;
-    }
+        =>new AboutPathDisplay(value);
     static void Instructions(TableLayoutPanel parent,string text)
     {
         var label=new Label{Text=text,AutoSize=true,Dock=DockStyle.Fill,Margin=new Padding(0,6,0,10)};
         parent.SizeChanged+=(_,_)=>label.MaximumSize=new Size(Math.Max(200,parent.ClientSize.Width-parent.Padding.Horizontal-12),0);
         SettingsForm.Add(parent,label);
+    }
+}
+
+internal sealed class AboutPathDisplay:Panel
+{
+    internal AboutPathDisplay(string value)
+    {
+        Dock=DockStyle.Fill;Height=72;
+        Padding=new Padding(12);Margin=new Padding(0,0,0,4);BackColor=Visuals.Surface;TabStop=false;
+        var text=new ValueLabel{Text=value,AutoSize=false,UseMnemonic=false,AccessibleName=value,TabStop=false,Cursor=Cursors.Default};
+        var copy=SettingsForm.Button("コピー",(_,_)=>{},80);copy.AccessibleName="表示内容をコピー";copy.Anchor=AnchorStyles.Top|AnchorStyles.Right;
+        copy.Click+=(_,_)=>{try{Clipboard.SetText(value);copy.Text="コピー済";}catch(System.Runtime.InteropServices.ExternalException){copy.Text="再試行";}};
+        Controls.Add(text);Controls.Add(copy);
+        void Arrange()
+        {
+            int width=Math.Max(100,ClientSize.Width-Padding.Horizontal-96);
+            int height=TextRenderer.MeasureText(value,Font,new Size(width,int.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.TextBoxControl|TextFormatFlags.NoPrefix).Height+8;
+            text.Bounds=new Rectangle(12,16,width,height);
+            copy.Location=new Point(Math.Max(12,ClientSize.Width-92),12);
+            Height=Math.Max(height+28,copy.Height+24);
+        }
+        SizeChanged+=(_,_)=>Arrange();FontChanged+=(_,_)=>Arrange();Arrange();
+    }
+    internal static void ScrollPage(Control source,MouseEventArgs e)
+    {
+        if(e is HandledMouseEventArgs handled){if(handled.Handled)return;handled.Handled=true;}
+        for(Control? ancestor=source.Parent;ancestor!=null;ancestor=ancestor.Parent)
+            if(ancestor is ScrollableControl viewport&&viewport.AutoScroll)
+            {
+                int distance=(int)Math.Round(e.Delta/120.0*48);
+                viewport.AutoScrollPosition=new Point(0,Math.Max(0,-viewport.AutoScrollPosition.Y-distance));return;
+            }
+    }
+    protected override void OnMouseWheel(MouseEventArgs e)=>ScrollPage(this,e);
+    sealed class ValueLabel:Label
+    {
+        protected override void OnMouseWheel(MouseEventArgs e)=>ScrollPage(this,e);
     }
 }

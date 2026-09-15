@@ -62,8 +62,16 @@ public class ScrollThemeTests
                 form.Close();
                 using var about=new AboutForm();about.Show();Application.DoEvents();
                 static IEnumerable<Control> Walk(Control c)=>c.Controls.Cast<Control>().SelectMany(x=>new[]{x}.Concat(Walk(x)));
+                Assert.Empty(Walk(about).OfType<TextBox>());
                 foreach(var section in Walk(about).OfType<AccordionSection>())section.Expanded=true;
                 var panel=Walk(about).OfType<Panel>().Single(p=>p.AutoScroll);
+                Application.DoEvents();
+                var display=Walk(about).OfType<AboutPathDisplay>().First();
+                var path=display.Controls.OfType<Label>().Single();Assert.False(path.TabStop);
+                panel.AutoScrollPosition=Point.Empty;Application.DoEvents();
+                var wheel=new HandledMouseEventArgs(MouseButtons.None,0,10,10,-120);
+                path.GetType().GetMethod("OnMouseWheel",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(path,new object[]{wheel});
+                Application.DoEvents();Assert.True(wheel.Handled);Assert.True(panel.AutoScrollPosition.Y<0);
                 panel.AutoScrollPosition=new Point(0,10000);panel.Refresh();Application.DoEvents();
                 var aboutBar=Walk(about).OfType<ScrollThumb>().Single();
                 Assert.True(panel.AutoScrollPosition.Y<0);
