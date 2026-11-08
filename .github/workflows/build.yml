@@ -53,9 +53,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_NOTES: |
+            ### Windowsでの実行について
+
+            本アプリはコード署名を行っていないため、初回起動時にWindows Defender SmartScreenの警告が表示される場合があります。
+
+            その場合は、配布元が正しいことを確認したうえで、「詳細情報」→「実行」を選択してください。
         run: |
           git archive --format=zip --output=artifacts/CopilotKeyFighter-source.zip HEAD
           if ($LASTEXITCODE -ne 0) { throw 'Source archive failed' }
           $files = @(Get-ChildItem artifacts -File | ForEach-Object FullName)
-          gh release create $env:RELEASE_TAG @files --verify-tag --draft --prerelease --generate-notes
+          gh release create $env:RELEASE_TAG @files --verify-tag --draft --prerelease --generate-notes --notes $env:RELEASE_NOTES
           if ($LASTEXITCODE -ne 0) { throw 'Draft release failed' }

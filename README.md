@@ -12,6 +12,8 @@ Windows 11 の通知領域に常駐し、Copilot キーの標準の起動動作�
 
 ## ダウンロードと初回設定
 
+**注意：** 本アプリは未署名のため、Windowsの起動時にセキュリティ警告が表示される場合があります。
+
 1. [GitHub Releases](https://github.com/Lye-0/Copilot-Key-Fighter/releases) から **`CopilotKeyFighter-<バージョン>-win-x64.zip`** をダウンロードします。`source.zip` は開発者向けのソースです。
 2. ZIP を、使い続けるフォルダーに**すべて展開**します。例：`C:\Users\自分の名前\Apps\CopilotKeyFighter`。
 3. 展開先の **`CopilotKeyFighter.exe`** を起動します。
