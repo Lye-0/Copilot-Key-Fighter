@@ -35,7 +35,7 @@ UiButton, UiCheck and ModeSelector provide consistent drawn selection, hover, di
 Rendered application, keyboard and suppression pages and the key picker were reviewed. UI tests cover selected Delete preservation, draft/applied-state separation, revert/save behavior, pause status and Save visibility at a smaller size. The keyboard capture/sending pipeline is unchanged by this UI revision.
 ## Distribution
 
-scripts/package.ps1 builds the Windows x64 self-contained single-file executable, includes GPL-3.0, notices, runtime licenses, and creates a ZIP plus SHA256. GitHub Actions tests/packages on branch/PR and creates a draft prerelease on a version tag. The same commit's source archive is attached. Publishing a draft is a separate release operation. No updater, service, signing, or installer is implemented.
+scripts/package.ps1 builds the Windows x64 self-contained single-file executable, includes the MIT license, notices, runtime licenses, and creates a ZIP plus SHA256. GitHub Actions tests/packages on branch/PR and creates a draft prerelease on a version tag. The same commit's source archive is attached. Publishing a draft is a separate release operation. No updater, service, signing, or installer is implemented.
 
 The historical migration plan remains under docs/plans; this document describes current code. See docs/verification.md for what was actually exercised and what remains to validate.
 

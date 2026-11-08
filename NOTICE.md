@@ -1,6 +1,6 @@
 # Notices
 
-Copilot Key Fighter source code: GPL-3.0-only.
+Copilot Key Fighter source code: MIT License (see LICENSE).
 Copyright (C) 2026 Copilot Key Fighter contributors.
 
 The self-contained executable includes Microsoft .NET runtime components under their respective licenses. The release archive includes the license and third-party notice files supplied by the runtime NuGet packages. Source: https://github.com/dotnet/runtime and https://github.com/dotnet/windowsdesktop.

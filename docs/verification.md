@@ -14,7 +14,7 @@ Date: 2026-09-14. Windows x64 / .NET SDK 10.0.401, runtime packs 10.0.12. This i
 - App catalog enumeration returned **169 apps** on the development PC: 91 executable targets, 51 packaged targets, 27 Shell targets. Enumeration does not prove every entry can launch.
 - The generated ZIP was extracted and its executable started. Starting again returned exit code 0 with **one resident process**. During a 3-second idle sample, measured CPU time increased by **0 ms**. The sample is short and does not establish long-term resource behavior.
 - `--exit` ended the resident successfully. Tests did not alter the legacy launcher or PowerToys settings.
-- ZIP generation includes one executable, GPL license, notices and the runtime package license files. SHA256 is emitted alongside the ZIP.
+- ZIP generation includes one executable, the project license, notices and the runtime package license files. SHA256 is emitted alongside the ZIP.
 
 ## Manual release gates — not yet run for this distribution build
 

@@ -13,6 +13,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>0.1.0</Version>
     <Product>Copilot Key Fighter</Product>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <DebugType>none</DebugType>
   </PropertyGroup>
   <ItemGroup>

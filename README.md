@@ -202,6 +202,6 @@ GitHub Actions は push / pull request でテストとパッケージ生成を�
 
 ## ライセンス
 
-ソースコードは **GPL-3.0-only** です。本文は [LICENSE](LICENSE)。バイナリに対応するソースとビルド手順は、同一バージョンのタグおよびソース ZIP で提供します。
+ソースコードは **MIT License** で公開しています。本文は [LICENSE](LICENSE)。バイナリに対応するソースとビルド手順は、同一バージョンのタグおよびソース ZIP で提供します。
 
 本プロジェクトは Microsoft の公式製品ではありません。第三者のコンポーネント・マークについては [NOTICE.md](NOTICE.md) を参照してください。
